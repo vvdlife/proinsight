@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-export async function generateBlogImage(prompt: string): Promise<string | null> {
+export async function generateBlogImage(prompt: string, apiKey: string): Promise<string | null> {
+    const genAI = new GoogleGenerativeAI(apiKey);
     try {
         // User requested: gemini-3-pro-image-preview
         const imageModel = genAI.getGenerativeModel({

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 export interface SEOResult {
     seoScore: number;
@@ -10,7 +10,8 @@ export interface SEOResult {
     suggestions: string[];
 }
 
-export async function analyzeSEO(content: string, topic: string): Promise<SEOResult> {
+export async function analyzeSEO(content: string, topic: string, apiKey: string): Promise<SEOResult> {
+    const genAI = new GoogleGenerativeAI(apiKey);
     try {
         const model = genAI.getGenerativeModel({
             model: "gemini-3-pro-preview", // Using Gemini 3 Pro for consistent high quality analysis

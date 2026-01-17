@@ -23,6 +23,22 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
             message: "로그인이 필요합니다.",
         };
     }
+
+    // BYOK: Fetch API Key
+    const settings = await prisma.userSettings.findUnique({
+        where: { userId },
+        select: { apiKey: true },
+    });
+
+    if (!settings?.apiKey) {
+        return {
+            success: false,
+            message: "API Key가 설정되지 않았습니다. 설정 페이지에서 키를 먼저 등록해주세요.",
+        };
+    }
+
+    const apiKey = settings.apiKey;
+
     // 1. Server-side validation
     const result = postSchema.safeParse(data);
 
@@ -39,7 +55,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         console.log("🚀 Starting Parallel Generation Pipeline...");
 
         // Text Pipeline Promise
-        const textGenerationPromise = generateBlogPost(data, searchContext);
+        const textGenerationPromise = generateBlogPost(data, searchContext, apiKey);
 
         // Image Pipeline Promise
         const imageGenerationPromise = (async () => {
@@ -47,11 +63,21 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
 
             console.log("🎨 Starting Image Pipeline...");
             // Step A: Planner
-            const imagePrompt = await generateImagePrompt(data.topic);
+            // generateImagePrompt currently uses global AI too? Check calling convention. 
+            // It's likely using global, so we might need to update it too. 
+            // WAIT: I missed create-image-prompt.ts refactor?
+            // Let's assume for now generateImagePrompt needs refactor or I will check it next.
+            // Actually, based on previous files, I haven't refactored image-prompt.ts yet.
+            // I will pass apiKey to it assuming I will fix it right after this.
+
+            // To be safe, let's fix image-prompt.ts FIRST or pass it as is and fix later.
+            // But strict TS will fail if I pass apiKey and it doesn't accept it.
+            // Let's assume I will fix image-prompt.ts to accept apiKey.
+            const imagePrompt = await generateImagePrompt(data.topic, apiKey);
             console.log(`   📝 Image Prompt: ${imagePrompt}`);
 
             // Step B: Generator
-            const imageBase64 = await generateBlogImage(imagePrompt);
+            const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
 
             if (imageBase64) {
                 console.log("   ✅ Image Generated Successfully");
@@ -96,10 +122,6 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         };
     } catch (error) {
         console.error("AI Generation Critical Error:", error);
-        console.log("Debug Info:", {
-            hasApiKey: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-            hasUserId: !!userId,
-        });
         return {
             success: false,
             message: error instanceof Error ? error.message : "AI 글 생성 중 알 수 없는 오류가 발생했습니다.",

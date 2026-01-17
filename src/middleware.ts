@@ -1,9 +1,20 @@
+// Path: src/middleware.ts
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
+    // 1. Access Gate Check
+    // If accessing protected routes, check for 'site-access' cookie first
     if (isProtectedRoute(req)) {
+        const hasAccess = req.cookies.get("site-access")?.value === "true";
+        if (!hasAccess) {
+            const gateUrl = new URL("/gate", req.url);
+            return NextResponse.redirect(gateUrl);
+        }
+
+        // 2. Clerk Auth Check (If access granted)
         await auth.protect();
     }
 });
@@ -16,3 +27,5 @@ export const config = {
         "/(api|trpc)(.*)",
     ],
 };
+
+

@@ -2,7 +2,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PostFormValues } from "@/lib/schemas/post-schema";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
 // Output structure for Phase 1: Engineer
 interface OutlineSection {
@@ -16,7 +16,8 @@ interface Outline {
 }
 
 // Phase 1: The Architect - Generates a logical outline
-async function generateOutline(data: PostFormValues, searchContext?: string): Promise<Outline> {
+async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string): Promise<Outline> {
+    const genAI = new GoogleGenerativeAI(apiKey);
     // User requested Gemini 3 Flash or Pro. Using "gemini-3-pro-preview" for maximum Quality.
     const model = genAI.getGenerativeModel({
         model: "gemini-3-pro-preview",
@@ -44,11 +45,12 @@ INSTRUCTIONS:
 1. Analyze the 'search_context' to identify key themes and logical flow.
 2. Structure the post into 5-8 distinct sections.
 3. **CRITICAL**: The first section MUST be named "Key Takeaways (3줄 요약)".
-4. For each section, define the 'heading' and 2-4 'key_points' to cover.
-5. **CRITICAL**: Do NOT include numbers in the 'heading' string. (e.g., Use "Introduction", NOT "1. Introduction").
-6. Ensure the flow is logical: Key Takeaways -> Introduction -> Core Concepts / Background -> In-Depth Analysis -> Real-world Examples -> Conclusion.
-7. LANGUAGE: The title, headings, and key points MUST be in KOREAN (한국어).
-8. Output MUST be valid JSON with this structure:
+4. **CRITICAL**: The LAST section MUST be named "자주 묻는 질문 (FAQ)".
+5. For each section, define the 'heading' and 2-4 'key_points' to cover.
+6. **CRITICAL**: Do NOT include numbers in the 'heading' string. (e.g., Use "Introduction", NOT "1. Introduction").
+7. Ensure the flow is logical: Key Takeaways -> Introduction -> Core Concepts / Background -> In-Depth Analysis -> Real-world Examples -> FAQ -> Conclusion.
+8. LANGUAGE: The title, headings, and key points MUST be in KOREAN (한국어).
+9. Output MUST be valid JSON with this structure:
 {
   "title": "A compelling title for the post (Korean)",
   "sections": [
@@ -79,8 +81,10 @@ INSTRUCTIONS:
 async function generateSection(
     data: PostFormValues,
     section: OutlineSection,
-    searchContext: string | undefined
+    searchContext: string | undefined,
+    apiKey: string
 ): Promise<string> {
+    const genAI = new GoogleGenerativeAI(apiKey);
     // Using gemini-3-pro-preview for high-quality writing
     const model = genAI.getGenerativeModel({
         model: "gemini-3-pro-preview",
@@ -106,7 +110,12 @@ STRICT INSTRUCTIONS:
    - Use standard Markdown headers (###, ####) for subsections.
    - Do NOT use H1 (#) or H2 (##) as the section title is added automatically.
    - Do NOT manually number the section title (e.g., avoid "1. Introduction").
-3. **Features**:
+3. **E-E-A-T Enhancement (Experience, Expertise, Authoritativeness, Trustworthiness)**:
+   - **Experience**: Include specific scenarios or "real-world" application examples. Avoid generic theory.
+   - **Expertise**: Use precise technical terminology and provide deep analysis.
+   - **Authoritativeness**: Actively cite sources from 'search_context' using inline brackets like [1], [2].
+   - **Trustworthiness**: Maintain a neutral, objective tone and justify conclusions.
+4. **Features**:
    - **핵심 요약 (Summary)**: Start the section with a concise "핵심 요약" summary if the section is complex or lengthy.
    - **Callouts**: Use GitHub Alert syntax for important notes or tips.
      > [!NOTE] This is a note.
@@ -121,8 +130,12 @@ STRICT INSTRUCTIONS:
      graph TD
        A["시작 (Start)"] -- "조건 (Condition)" --> B["결과 (Result)"]
      \`\`\`
-4. Incorporate deep insights from the 'search_context'.
-5. CITATIONS: Use inline citations [1], [2] referencing the context.
+   - **FAQ Schema**:
+     - IF and ONLY IF this section is "FAQ" or "자주 묻는 질문":
+       - Write the Q&A in standard text first.
+       - THEN, append a valid JSON-LD \`<script type="application/ld+json">\` block for "FAQPage" schema.
+       - Ensure the JSON-LD is properly formatted inside a \`html\` code block or plain text that doesn't break markdown rendering.
+5. Incorporate deep insights from the 'search_context'.
 6. If information is missing, admit it or focus on general principles.
 7. Tone: ${data.tone}
 8. LANGUAGE: Write strictly in KOREAN (한국어). Do not use English unless it is a proper noun or technical term.
@@ -134,9 +147,9 @@ STRICT INSTRUCTIONS:
 }
 
 // Phase 3: The Assembly - Orchestrates the pipeline
-export async function generateBlogPost(data: PostFormValues, searchContext?: string): Promise<string> {
+export async function generateBlogPost(data: PostFormValues, searchContext: string | undefined, apiKey: string): Promise<string> {
     console.log("🚀 [Phase 1] Architect: Designing Outline...");
-    const outline = await generateOutline(data, searchContext);
+    const outline = await generateOutline(data, searchContext, apiKey);
     console.log(`📋 Outline Generated: ${outline.title} (${outline.sections.length} sections)`);
 
     console.log("✍️ [Phase 2] Writer: Writing sections with Bounded Concurrency (Limit: 2)...");
@@ -154,7 +167,7 @@ export async function generateBlogPost(data: PostFormValues, searchContext?: str
             const globalIndex = i + batchIndex;
             console.log(`   ⏳ Writing Section ${globalIndex + 1}/${outline.sections.length}: ${section.heading}...`);
             try {
-                const content = await generateSection(data, section, searchContext);
+                const content = await generateSection(data, section, searchContext, apiKey);
                 sectionContents[globalIndex] = content;
                 console.log(`   ✅ Section ${globalIndex + 1} Done.`);
             } catch (error) {
@@ -190,8 +203,9 @@ ${referencesSection}
     return finalContent;
 }
 
-export async function generateBlogImage(prompt: string): Promise<string | null> {
+export async function generateBlogImage(prompt: string, apiKey: string): Promise<string | null> {
     try {
+        const genAI = new GoogleGenerativeAI(apiKey);
         const imageModel = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
         const result = await imageModel.generateContent(prompt);
@@ -218,8 +232,9 @@ export async function generateBlogImage(prompt: string): Promise<string | null> 
     }
 }
 
-export async function optimizeContent(content: string, suggestions: string[]): Promise<string> {
+export async function optimizeContent(content: string, suggestions: string[], apiKey: string): Promise<string> {
     try {
+        const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-3-pro-preview",
             generationConfig: { temperature: 0.2 }
