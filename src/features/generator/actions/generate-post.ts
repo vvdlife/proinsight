@@ -1,10 +1,11 @@
-// Path: src/features/generator/actions/generate-post.ts
 "use server";
 
 import { generateBlogPost } from "@/lib/services/ai";
 import { postSchema, PostFormValues } from "@/lib/schemas/post-schema";
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { generateImagePrompt } from "@/lib/services/image-prompt";
+import { generateBlogImage } from "@/lib/services/image-gen";
 
 export type GeneratePostResult = {
     success: boolean;
@@ -14,7 +15,7 @@ export type GeneratePostResult = {
     errors?: Record<string, string[]>;
 };
 
-export async function generatePost(data: PostFormValues): Promise<GeneratePostResult> {
+export async function generatePost(data: PostFormValues, searchContext?: string): Promise<GeneratePostResult> {
     const { userId } = await auth();
     if (!userId) {
         return {
@@ -34,8 +35,45 @@ export async function generatePost(data: PostFormValues): Promise<GeneratePostRe
     }
 
     try {
-        // 2. Call AI Service
-        const generatedContent = await generateBlogPost(data);
+        // 2. Parallel Execution: Text (Writer) + Image (Designer)
+        console.log("🚀 Starting Parallel Generation Pipeline...");
+
+        // Text Pipeline Promise
+        const textGenerationPromise = generateBlogPost(data, searchContext);
+
+        // Image Pipeline Promise
+        const imageGenerationPromise = (async () => {
+            if (!data.includeImage) return null;
+
+            console.log("🎨 Starting Image Pipeline...");
+            // Step A: Planner
+            const imagePrompt = await generateImagePrompt(data.topic);
+            console.log(`   📝 Image Prompt: ${imagePrompt}`);
+
+            // Step B: Generator
+            const imageBase64 = await generateBlogImage(imagePrompt);
+
+            if (imageBase64) {
+                console.log("   ✅ Image Generated Successfully");
+                return imageBase64;
+            } else {
+                console.log("   ❌ Image Generation Failed");
+                return null;
+            }
+        })();
+
+        // Wait for both to complete
+        const [generatedContent, coverImageUrl] = await Promise.all([
+            textGenerationPromise,
+            imageGenerationPromise
+        ]);
+
+        // Post-processing: Append image if it exists
+        let finalContent = generatedContent;
+        if (coverImageUrl) {
+            finalContent = `![Cover Image](${coverImageUrl})\n\n${generatedContent}`;
+            console.log("   🧩 Final Content Assembled. Preview: " + finalContent.substring(0, 50) + "...");
+        }
 
         // 3. Save to Database
         const post = await prisma.post.create({
@@ -45,6 +83,7 @@ export async function generatePost(data: PostFormValues): Promise<GeneratePostRe
                 tone: data.tone,
                 status: "DRAFT",
                 userId,
+                coverImage: coverImageUrl,
             },
         });
 
@@ -53,13 +92,17 @@ export async function generatePost(data: PostFormValues): Promise<GeneratePostRe
             success: true,
             message: "AI가 글을 성공적으로 작성했습니다!",
             postId: post.id,
-            content: generatedContent,
+            content: finalContent, // Return content WITH image for immediate preview
         };
     } catch (error) {
-        console.error("AI Generation Error:", error);
+        console.error("AI Generation Critical Error:", error);
+        console.log("Debug Info:", {
+            hasApiKey: !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+            hasUserId: !!userId,
+        });
         return {
             success: false,
-            message: "AI 글 생성 중 오류가 발생했습니다.",
+            message: error instanceof Error ? error.message : "AI 글 생성 중 알 수 없는 오류가 발생했습니다.",
         };
     }
 }

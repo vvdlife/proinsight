@@ -26,16 +26,20 @@
 
 ## 3. 환경 변수 등록 (Environment Variables)
 
-**Settings** > **Environment Variables**로 이동하여 다음 변수들을 추가로 등록해야 합니다.
+**중요**: 프로덕션 배포 시에는 **Clerk Production Keys**(`pk_live_...`, `sk_live_...`)를 사용해야 합니다.
+
+1. Clerk Dashboard 좌측 상단에서 **Development**를 클릭하고 **Production** 인스턴스를 생성(또는 전환)합니다.
+2. **API Keys** 메뉴에서 `Publishable key`와 `Secret key`를 복사합니다.
+3. Vercel 대시보드 **Settings** > **Environment Variables**에서 아래 키 값을 수정합니다.
 
 | 키 | 설명 | 예시 |
 |---|---|---|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk 공개 키 | `pk_test_...` |
-| `CLERK_SECRET_KEY` | Clerk 비밀 키 | `sk_test_...` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk 라이브 공개 키 | `pk_live_...` |
+| `CLERK_SECRET_KEY` | Clerk 라이브 비밀 키 | `sk_live_...` |
 | `GEMINI_API_KEY` | Google Gemini API 키 | `AIza...` |
 | `NEXT_PUBLIC_APP_URL` | 배포된 앱의 도메인 | `https://your-project.vercel.app` |
 
-> **주의**: `DATABASE_URL` 등 Postgres 관련 변수들은 Vercel Postgres 생성 시 자동으로 추가되므로 별도로 추가할 필요가 없습니다.
+> **주의**: 키를 변경한 후에는 **Deployments** 탭에서 **Redeploy**를 수행해야 변경 사항이 적용됩니다.
 
 ## 4. 로컬 환경에서 Vercel DB 연결 (선택 사항)
 

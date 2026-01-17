@@ -1,0 +1,109 @@
+@import '@mdxeditor/editor/style.css';
+
+/* Custom overrides for dark mode and Shadcn compatibility */
+.mdx-editor {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+.mdx-editor ._contentEditable_15o81_166 {
+    padding: 1rem !important;
+    min-height: 500px;
+}
+
+/* Headings */
+.mdx-editor h1 {
+    font-size: 2.25em;
+    font-weight: 800;
+    margin-bottom: 0.5em;
+}
+
+.mdx-editor h2 {
+    font-size: 1.75em;
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    border-bottom: 1px solidhsl(var(--border));
+    padding-bottom: 0.3em;
+}
+
+.mdx-editor h3 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+}
+
+/* Lists */
+.mdx-editor ul,
+.mdx-editor ol {
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.mdx-editor li {
+    margin-bottom: 0.25em;
+}
+
+/* Blockquotes */
+.mdx-editor blockquote {
+    border-left: 4px solid hsl(var(--primary));
+    padding-left: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
+    background-color: hsl(var(--muted) / 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+}
+
+/* Code */
+.mdx-editor code {
+    background-color: hsl(var(--muted));
+    padding: 0.2em 0.4em;
+    border-radius: 0.25em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.mdx-editor pre {
+    background-color: hsl(var(--muted));
+    padding: 1em;
+    border-radius: 0.5em;
+    overflow-x: auto;
+    margin-bottom: 1em;
+}
+
+.mdx-editor pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+/* Links */
+.mdx-editor a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* Toolbar customization */
+.mdx-editor ._toolbar_15o81_207 {
+    background-color: hsl(var(--muted)) !important;
+    border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+.mdx-editor ._toolbarButton_15o81_237 {
+    color: hsl(var(--foreground)) !important;
+}
+
+.mdx-editor ._toolbarButton_15o81_237:hover {
+    background-color: hsl(var(--accent)) !important;
+}
+
+/* Dark mode specific adjustments if class 'dark' is present in ancestors */
+.dark .mdx-editor {
+    --baseText: hsl(var(--foreground));
+    color: var(--baseText);
+}

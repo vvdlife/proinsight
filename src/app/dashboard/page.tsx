@@ -2,112 +2,109 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { FileText, PlusCircle } from "lucide-react";
-import { DeletePostButton } from "@/components/delete-post-button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, PlusCircle, ArrowRight, PenTool } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
 
 export const dynamic = "force-dynamic";
-
-import { auth } from "@clerk/nextjs/server";
 
 export default async function DashboardPage() {
     const { userId } = await auth();
     if (!userId) return null;
 
-    const posts = await prisma.post.findMany({
-        where: {
-            userId,
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
+    // Fetch only recent 5 posts
+    const recentPosts = await prisma.post.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+    });
+
+    const totalPosts = await prisma.post.count({
+        where: { userId },
     });
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">대시보드</h1>
-                <Button asChild>
-                    <Link href="/dashboard/new">
-                        <PlusCircle className="mr-2 h-4 w-4" />새 글 작성
-                    </Link>
-                </Button>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">안녕하세요! 👋</h1>
+                    <p className="text-muted-foreground mt-2">오늘도 새로운 영감을 글로 남겨보세요.</p>
+                </div>
             </div>
 
-            <Card className="w-full">
-                <CardHeader>
-                    <CardTitle>최근 생성 기록</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {posts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 space-y-4 text-center">
-                            <div className="bg-muted rounded-full p-4">
-                                <FileText className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="font-semibold text-lg">아직 생성된 글이 없습니다</h3>
-                                <p className="text-muted-foreground max-w-sm">
-                                    AI 파트너와 함께 첫 번째 블로그 콘텐츠를 만들어보세요.
-                                </p>
-                            </div>
-                            <Button asChild variant="default" className="mt-4">
-                                <Link href="/dashboard/new">첫 번째 글 작성하기</Link>
-                            </Button>
+            {/* Quick Actions & Stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="hover:bg-muted/50 transition-colors cursor-pointer border-dashed border-2">
+                    <Link href="/dashboard/new" className="flex flex-col items-center justify-center h-full py-6">
+                        <PlusCircle className="h-8 w-8 text-primary mb-2" />
+                        <span className="font-semibold">새 글 작성하기</span>
+                        <span className="text-xs text-muted-foreground">AI 에이전트와 함께 시작</span>
+                    </Link>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">총 작성 글</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalPosts}</div>
+                        <p className="text-xs text-muted-foreground">
+                            지금까지 생성된 콘텐츠
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="grid gap-4 md:grid-cols-1">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>최근 활동</CardTitle>
+                            <CardDescription>최근 생성된 5개의 게시글입니다.</CardDescription>
                         </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[40%]">주제 (Topic)</TableHead>
-                                    <TableHead>어조 (Tone)</TableHead>
-                                    <TableHead>상태 (Status)</TableHead>
-                                    <TableHead>생성일</TableHead>
-                                    <TableHead className="text-right">관리</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {posts.map((post: any) => (
-                                    <TableRow key={post.id}>
-                                        <TableCell className="font-medium">{post.topic}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className="capitalize">
-                                                {post.tone}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline">{post.status}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {post.createdAt.toLocaleDateString("ko-KR", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                            })}
-                                        </TableCell>
-                                        <TableCell className="text-right flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                                <Link href={`/dashboard/post/${post.id}`}>
-                                                    <FileText className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                            <DeletePostButton id={post.id} />
-                                        </TableCell>
-                                    </TableRow>
+                        <Button variant="ghost" size="sm" asChild>
+                            <Link href="/dashboard/posts" className="flex items-center">
+                                전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        {recentPosts.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                아직 활동 내역이 없습니다.
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {recentPosts.map((post) => (
+                                    <div
+                                        key={post.id}
+                                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-primary/10 p-2 rounded-full">
+                                                <PenTool className="h-4 w-4 text-primary" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="font-medium leading-none">{post.topic}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {post.createdAt.toLocaleDateString("ko-KR", {
+                                                        year: "numeric", month: "long", day: "numeric"
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="sm" asChild>
+                                            <Link href={`/dashboard/post/${post.id}`}>열기</Link>
+                                        </Button>
+                                    </div>
                                 ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

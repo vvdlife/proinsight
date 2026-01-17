@@ -16,6 +16,7 @@ model Post {
   topic     String
   content   String
   tone      String
+  coverImage String? // Base64 encoded image
   userId    String
   status    String   @default("DRAFT")
   createdAt DateTime @default(now())

@@ -2,7 +2,9 @@
 "use client";
 
 import { generatePost } from "@/features/generator/actions/generate-post";
+import { searchTopic } from "@/features/generator/actions/search-topic";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -37,8 +39,12 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { MarkdownViewer } from "@/components/markdown-viewer";
 
+type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
+
 export default function NewPostPage() {
+    const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const [status, setStatus] = useState<Status>("IDLE");
     const [generatedContent, setGeneratedContent] = useState<string>("");
 
     const form = useForm<PostFormValues>({
@@ -53,20 +59,38 @@ export default function NewPostPage() {
     });
 
     function onSubmit(data: PostFormValues) {
-        startTransition(async () => {
-            const result = await generatePost(data);
+        setGeneratedContent("");
+        setStatus("IDLE");
 
-            if (result.success) {
-                toast.success(`생성 완료!`, {
-                    description: result.message,
-                });
-                if (result.content) {
-                    setGeneratedContent(result.content);
+        startTransition(async () => {
+            try {
+                // 1. Search Phase (Deep Research)
+                setStatus("SEARCHING");
+                const searchResult = await searchTopic(data.topic);
+
+                if (!searchResult.success) {
+                    toast.error(`Deep Research 실패: ${searchResult.message}`);
+                    setStatus("IDLE");
+                    return;
                 }
-            } else {
-                toast.error("생성 실패", {
-                    description: result.message,
-                });
+
+                // 2. Writing Phase (Fact Checking & Generation)
+                setStatus("WRITING");
+                const result = await generatePost(data, searchResult.context);
+
+                if (result.success && result.postId) {
+                    toast.success("생성 완료! 상세 페이지로 이동합니다.");
+                    // Redirect to the unified post detail page
+                    router.push(`/dashboard/post/${result.postId}`);
+                } else {
+                    toast.error("생성 실패", {
+                        description: result.message,
+                    });
+                    setStatus("IDLE");
+                }
+            } catch (error) {
+                toast.error("알 수 없는 오류가 발생했습니다.");
+                setStatus("IDLE");
             }
         });
     }
@@ -192,34 +216,25 @@ export default function NewPostPage() {
                                 )}
                             />
 
-                            <Button type="submit" className="w-full" size="lg" disabled={isPending}>
-                                {isPending ? (
+                            <Button type="submit" className="w-full" size="lg" disabled={isPending || status !== "IDLE"}>
+                                {status === "SEARCHING" && (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        생성 중...
+                                        최신 정보를 검색 중입니다 (Deep Research)...
                                     </>
-                                ) : (
-                                    "생성 시작"
                                 )}
+                                {status === "WRITING" && (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        글을 작성 중입니다 (Fact Checking)...
+                                    </>
+                                )}
+                                {(status === "IDLE" || status === "COMPLETED") && "생성 시작"}
                             </Button>
                         </form>
                     </Form>
                 </CardContent>
             </Card>
-
-            {generatedContent && (
-                <Card className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4">
-                    <CardHeader>
-                        <CardTitle>생성된 초안 (Draft)</CardTitle>
-                        <CardDescription>
-                            AI가 작성한 초안입니다.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <MarkdownViewer content={generatedContent} />
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }

@@ -62,8 +62,10 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col gap-4 sm:flex-row"
         >
-          <Button size="lg" className="h-12 px-8 text-base">
-            Start Generating <ArrowRight className="ml-2 h-4 w-4" />
+          <Button size="lg" className="h-12 px-8 text-base" asChild>
+            <Link href="/dashboard">
+              Start Generating <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
           <Button
             size="lg"
