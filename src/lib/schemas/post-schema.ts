@@ -1,0 +1,14 @@
+// Path: src/lib/schemas/post-schema.ts
+import { z } from "zod";
+
+export const postSchema = z.object({
+    topic: z
+        .string()
+        .min(5, { message: "주제는 최소 5자 이상이어야 합니다." }),
+    keywords: z.string().optional(),
+    tone: z.enum(["professional", "friendly", "witty"]),
+    length: z.enum(["short", "medium", "long"]),
+    includeImage: z.boolean(),
+});
+
+export type PostFormValues = z.infer<typeof postSchema>;
