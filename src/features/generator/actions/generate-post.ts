@@ -54,59 +54,50 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
     }
 
     try {
-        // 2. Parallel Execution: Text (Writer) + Image (Designer)
-        console.log("🚀 Starting Parallel Generation Pipeline...");
+        // 2. Serial Execution (High Quality / Stability Priority)
+        console.log("🚀 Starting Generation Pipeline (Pro Mode enabled)...");
 
-        // 2-0. SEO Planning (Synchronous Step - Required for Content)
-        console.log("🧠 Starting SEO Strategy Planning...");
+        // 2-1. SEO Planning
+        console.log("🧠 [Phase 1] SEO Strategy Planning...");
         const seoStrategy = await planSEOStrategy(data.topic, apiKey);
         console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
 
-        // Optimizing Pipeline: Run Image Generation in PARALLEL with Text Pipeline
-        // This saves ~5-10 seconds of execution time.
+        // 2-2. Drafting (Writer)
+        console.log("✍️ [Phase 2] Drafting content...");
+        const draftContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
-        // 1. Image Generation Task
-        const imageTask = (async () => {
-            if (!data.includeImage) return null;
+        // 2-3. Refining (Editor-in-Chief)
+        // With Vercel Pro, we can afford the time for the high-quality model to think deeply.
+        console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
+        const refinedContent = await refinePost(draftContent, data.topic, apiKey);
+
+        // 2-4. Image Generation (Designer)
+        let coverImageUrl = null;
+        if (data.includeImage) {
+            console.log("🎨 [Phase 4] Designing cover image...");
             try {
-                console.log("🎨 Starting Image Pipeline...");
                 const imagePrompt = await generateImagePrompt(data.topic, apiKey);
                 console.log(`   📝 Image Prompt: ${imagePrompt}`);
                 const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
                 if (imageBase64) {
                     console.log("   ✅ Image Generated Successfully");
-                    return imageBase64;
+                    coverImageUrl = imageBase64;
                 }
             } catch (e) {
-                console.error("   ❌ Image Generation Failed:", e);
+                console.error("   ❌ Image Generation Failed (Skipping):", e);
             }
-            return null;
-        })();
+        }
 
-        // 2. Text Generation Task (Draft -> Refine)
-        const textTask = (async () => {
-            // B. Draft Generation
-            const draft = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
-
-            // C. Editor Refinement
-            console.log("🧐 [Phase 3] Editor: Refining content...");
-            return await refinePost(draft, data.topic, apiKey);
-        })();
-
-        // Wait for both to finish
-        const [coverImageUrl, refinedContent] = await Promise.all([imageTask, textTask]);
-
-        // 3. Schema Generation (Fast)
+        // 3. Schema Generation
         const schemaMarkup = generateJSONLD(null, refinedContent);
 
         // Post-processing: Append image if it exists
         let finalContent = refinedContent;
         if (coverImageUrl) {
             finalContent = `![Cover Image](${coverImageUrl})\n\n${refinedContent}`;
-            console.log("   🧩 Final Content Assembled. Preview: " + finalContent.substring(0, 50) + "...");
         }
 
-        // 3. Save to Database
+        // 4. Save to Database
         const post = await prisma.post.create({
             data: {
                 topic: data.topic,
@@ -119,10 +110,9 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
             },
         });
 
-        // 4. Return success response
         return {
             success: true,
-            message: "AI가 글을 성공적으로 작성했습니다!",
+            message: "고품질 콘텐츠 생성이 완료되었습니다!",
             postId: post.id,
             content: finalContent,
         };
