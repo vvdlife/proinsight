@@ -226,7 +226,7 @@ export default function NewPostPage() {
                                 {status === "WRITING" && (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        글을 작성 중입니다 (Fact Checking)...
+                                        글을 작성하고 편집장이 검수 중입니다 (Editing)...
                                     </>
                                 )}
                                 {(status === "IDLE" || status === "COMPLETED") && "생성 시작"}

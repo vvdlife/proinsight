@@ -6,6 +6,9 @@ import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { generateImagePrompt } from "@/lib/services/image-prompt";
 import { generateBlogImage } from "@/lib/services/image-gen";
+import { planSEOStrategy } from "@/lib/services/seo-planner";
+import { generateJSONLD } from "@/lib/services/ai";
+import { refinePost } from "@/lib/services/editor";
 
 export type GeneratePostResult = {
     success: boolean;
@@ -54,8 +57,23 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         // 2. Parallel Execution: Text (Writer) + Image (Designer)
         console.log("🚀 Starting Parallel Generation Pipeline...");
 
-        // Text Pipeline Promise
-        const textGenerationPromise = generateBlogPost(data, searchContext, apiKey);
+        // 2-0. SEO Planning (Synchronous Step - Required for Content)
+        console.log("🧠 Starting SEO Strategy Planning...");
+        const seoStrategy = await planSEOStrategy(data.topic, apiKey);
+        console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
+
+        // Text Pipeline Promise (Writer)
+        // We will await this later, but constructing the promise here.
+        // ACTUALLY, to do refinement, we need the text result.
+        // We will await text generation -> refine -> then resolve, or handle chaining.
+        const textPipeline = async () => {
+            const rawContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
+            console.log("🧐 [Phase 3] Editor: Refining content...");
+            const refinedContent = await refinePost(rawContent, data.topic, apiKey);
+            return refinedContent;
+        };
+
+        const textGenerationPromise = textPipeline();
 
         // Image Pipeline Promise
         const imageGenerationPromise = (async () => {
@@ -110,6 +128,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
                 status: "DRAFT",
                 userId,
                 coverImage: coverImageUrl,
+                schemaMarkup: generateJSONLD(seoStrategy, generatedContent), // Generate and Save Schema
             },
         });
 

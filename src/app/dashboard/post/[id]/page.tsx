@@ -35,6 +35,16 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         notFound();
     }
 
-    return <PostDetailClient post={post} />;
+    return (
+        <>
+            {post.schemaMarkup && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: post.schemaMarkup }}
+                />
+            )}
+            <PostDetailClient post={post} />
+        </>
+    );
 }
 

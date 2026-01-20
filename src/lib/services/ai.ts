@@ -15,8 +15,10 @@ interface Outline {
     sections: OutlineSection[];
 }
 
+import { SEOStrategy } from "./seo-planner";
+
 // Phase 1: The Architect - Generates a logical outline
-async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string): Promise<Outline> {
+async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<Outline> {
     const genAI = new GoogleGenerativeAI(apiKey);
     // User requested Gemini 3 Flash or Pro. Using "gemini-3-pro-preview" for maximum Quality.
     const model = genAI.getGenerativeModel({
@@ -46,11 +48,15 @@ INSTRUCTIONS:
 2. Structure the post into 5-8 distinct sections.
 3. **CRITICAL**: The first section MUST be named "Key Takeaways (3줄 요약)".
 4. **CRITICAL**: The LAST section MUST be named "자주 묻는 질문 (FAQ)".
-5. For each section, define the 'heading' and 2-4 'key_points' to cover.
-6. **CRITICAL**: Do NOT include numbers in the 'heading' string. (e.g., Use "Introduction", NOT "1. Introduction").
-7. Ensure the flow is logical: Key Takeaways -> Introduction -> Core Concepts / Background -> In-Depth Analysis -> Real-world Examples -> FAQ -> Conclusion.
-8. LANGUAGE: The title, headings, and key points MUST be in KOREAN (한국어).
-9. Output MUST be valid JSON with this structure:
+5. **E-E-A-T & SEO Strategy**:
+   - Integrate these Target Keywords into the headings naturally: ${seoStrategy?.targetKeywords.join(", ") || "N/A"}.
+   - Use these H2 suggestions if relevant: ${seoStrategy?.h2Suggestions.join(", ") || "N/A"}.
+   - Address the Search Intent: "${seoStrategy?.searchIntent || "Informational"}".
+6. For each section, define the 'heading' and 2-4 'key_points' to cover.
+7. **CRITICAL**: Do NOT include numbers in the 'heading' string. (e.g., Use "Introduction", NOT "1. Introduction").
+8. Ensure the flow is logical: Key Takeaways -> Introduction -> Core Concepts / Background -> In-Depth Analysis -> Real-world Examples -> FAQ -> Conclusion.
+9. LANGUAGE: The title, headings, and key points MUST be in KOREAN (한국어).
+10. Output MUST be valid JSON with this structure:
 {
   "title": "A compelling title for the post (Korean)",
   "sections": [
@@ -147,9 +153,9 @@ STRICT INSTRUCTIONS:
 }
 
 // Phase 3: The Assembly - Orchestrates the pipeline
-export async function generateBlogPost(data: PostFormValues, searchContext: string | undefined, apiKey: string): Promise<string> {
+export async function generateBlogPost(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<string> {
     console.log("🚀 [Phase 1] Architect: Designing Outline...");
-    const outline = await generateOutline(data, searchContext, apiKey);
+    const outline = await generateOutline(data, searchContext, apiKey, seoStrategy);
     console.log(`📋 Outline Generated: ${outline.title} (${outline.sections.length} sections)`);
 
     console.log("✍️ [Phase 2] Writer: Writing sections with Bounded Concurrency (Limit: 2)...");
@@ -268,6 +274,39 @@ export async function optimizeContent(content: string, suggestions: string[], ap
         console.error("Content Optimization Error:", error);
         throw new Error("Failed to optimize content.");
     }
+}
+
+export function generateJSONLD(strategy: SEOStrategy, postContent: string): string {
+    const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": strategy.faqSection.map(item => ({
+            "@type": "Question",
+            "name": item.question,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.answer
+            }
+        }))
+    };
+
+    // Extract H1 title if possible, or use defaults
+    const headlineMatch = postContent.match(/^# (.*$)/m);
+    const headline = headlineMatch ? headlineMatch[1] : strategy.targetKeywords[0];
+
+    const articleSchema = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": headline,
+        "datePublished": new Date().toISOString(),
+        "author": {
+            "@type": "Person",
+            "name": "ProInsight AI"
+        }
+    };
+
+    // Return combined or array of schemas
+    return JSON.stringify([articleSchema, faqSchema], null, 2);
 }
 
 

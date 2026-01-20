@@ -17,6 +17,7 @@ model Post {
   content   String
   tone      String
   coverImage String? // Base64 encoded image
+  schemaMarkup String? // JSON-LD schema for SEO
   userId    String
   status    String   @default("DRAFT")
   createdAt DateTime @default(now())
