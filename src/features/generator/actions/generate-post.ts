@@ -89,7 +89,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         }
 
         // 3. Schema Generation
-        const schemaMarkup = generateJSONLD(null, refinedContent);
+        const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
 
         // Post-processing: Append image if it exists
         let finalContent = refinedContent;
