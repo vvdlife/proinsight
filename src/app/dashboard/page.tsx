@@ -17,11 +17,18 @@ export default async function DashboardPage() {
     let dbError = null;
 
     try {
-        // Fetch only recent 5 posts
+        // Fetch only recent 5 posts with optimized selection
         recentPosts = await prisma.post.findMany({
             where: { userId },
             orderBy: { createdAt: "desc" },
             take: 5,
+            select: {
+                id: true,
+                topic: true,
+                createdAt: true,
+                userId: true,
+                // Explicitly NOT selecting content or coverImage to avoid 5MB limit
+            }
         });
 
         totalPosts = await prisma.post.count({
