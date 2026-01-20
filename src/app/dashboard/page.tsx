@@ -12,16 +12,39 @@ export default async function DashboardPage() {
     const { userId } = await auth();
     if (!userId) return null;
 
-    // Fetch only recent 5 posts
-    const recentPosts = await prisma.post.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-    });
+    let recentPosts: any[] = [];
+    let totalPosts = 0;
+    let dbError = null;
 
-    const totalPosts = await prisma.post.count({
-        where: { userId },
-    });
+    try {
+        // Fetch only recent 5 posts
+        recentPosts = await prisma.post.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+        });
+
+        totalPosts = await prisma.post.count({
+            where: { userId },
+        });
+    } catch (error) {
+        console.error("🔥 Dashboard DB Error:", error);
+        dbError = error instanceof Error ? error.message : "Unknown DB Error";
+    }
+
+    if (dbError) {
+        return (
+            <div className="p-8 text-red-500">
+                <h1 className="text-xl font-bold">Database Connection Error</h1>
+                <pre className="mt-4 p-4 bg-muted rounded text-sm overflow-auto">
+                    {dbError}
+                </pre>
+                <p className="mt-4 text-sm text-gray-500">
+                    Vercel Environment Variables (POSTGRES_PRISMA_URL)를 확인해주세요.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
