@@ -1,7 +1,5 @@
 "use server";
 
-
-
 import { generateBlogPost } from "@/lib/services/ai";
 import { postSchema, PostFormValues } from "@/lib/schemas/post-schema";
 import { prisma } from "@/lib/db";
@@ -64,53 +62,43 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         const seoStrategy = await planSEOStrategy(data.topic, apiKey);
         console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
 
-        // Text Pipeline Promise (Writer)
-        // We will await this later, but constructing the promise here.
-        // ACTUALLY, to do refinement, we need the text result.
-        // We will await text generation -> refine -> then resolve, or handle chaining.
-        const textPipeline = async () => {
-            const rawContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
-            console.log("🧐 [Phase 3] Editor: Refining content...");
-            const refinedContent = await refinePost(rawContent, data.topic, apiKey);
-            return refinedContent;
-        };
+        // Optimizing Pipeline: Run Image Generation in PARALLEL with Text Pipeline
+        // This saves ~5-10 seconds of execution time.
 
-        const textGenerationPromise = textPipeline();
-
-        // Image Pipeline Promise
-        const imageGenerationPromise = (async () => {
+        // 1. Image Generation Task
+        const imageTask = (async () => {
             if (!data.includeImage) return null;
-
-            console.log("🎨 Starting Image Pipeline...");
-            // Step A: Planner
-            // generateImagePrompt currently uses global AI too? Check calling convention. 
-            // It's likely using global, so we might need to update it too. 
-            // WAIT: I missed create-image-prompt.ts refactor?
-            // Let's assume for now generateImagePrompt needs refactor or I will check it next.
-            // Actually, based on previous files, I haven't refactored image-prompt.ts yet.
-            // I will pass apiKey to it assuming I will fix it right after this.
-
-            // To be safe, let's fix image-prompt.ts FIRST or pass it as is and fix later.
-            // But strict TS will fail if I pass apiKey and it doesn't accept it.
-            // Let's assume I will fix image-prompt.ts to accept apiKey.
-            const imagePrompt = await generateImagePrompt(data.topic, apiKey);
-            console.log(`   📝 Image Prompt: ${imagePrompt}`);
-
-            // Step B: Generator
-            const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
-
-            if (imageBase64) {
-                console.log("   ✅ Image Generated Successfully");
-                return imageBase64;
-            } else {
-                console.log("   ❌ Image Generation Failed");
-                return null;
+            try {
+                console.log("🎨 Starting Image Pipeline...");
+                const imagePrompt = await generateImagePrompt(data.topic, apiKey);
+                console.log(`   📝 Image Prompt: ${imagePrompt}`);
+                const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
+                if (imageBase64) {
+                    console.log("   ✅ Image Generated Successfully");
+                    return imageBase64;
+                }
+            } catch (e) {
+                console.error("   ❌ Image Generation Failed:", e);
             }
+            return null;
         })();
 
+        // 2. Text Generation Task (Draft -> Refine)
+        const textTask = (async () => {
+            // B. Draft Generation
+            const draft = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
+            // C. Editor Refinement
+            console.log("🧐 [Phase 3] Editor: Refining content...");
+            return await refinePost(draft, data.topic, apiKey);
+        })();
 
-        // Post-processing: Append image if it exists
+        // Wait for both to finish
+        const [coverImageUrl, refinedContent] = await Promise.all([imageTask, textTask]);
+
+        // 3. Schema Generation (Fast)
+        const schemaMarkup = generateJSONLD(null, refinedContent);
+
         // Post-processing: Append image if it exists
         let finalContent = refinedContent;
         if (coverImageUrl) {
@@ -127,7 +115,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
                 status: "DRAFT",
                 userId,
                 coverImage: coverImageUrl,
-                schemaMarkup: schemaMarkup, // Generate and Save Schema
+                schemaMarkup: schemaMarkup,
             },
         });
 
@@ -136,7 +124,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
             success: true,
             message: "AI가 글을 성공적으로 작성했습니다!",
             postId: post.id,
-            content: finalContent, // Return content WITH image for immediate preview
+            content: finalContent,
         };
     } catch (error) {
         console.error("AI Generation Critical Error:", error);
