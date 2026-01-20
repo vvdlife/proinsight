@@ -29,6 +29,13 @@ export default async function PostsPage() {
         orderBy: {
             createdAt: "desc",
         },
+        select: {
+            id: true,
+            topic: true,
+            tone: true,
+            status: true,
+            createdAt: true,
+        },
     });
 
     return (
