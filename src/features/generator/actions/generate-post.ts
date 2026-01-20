@@ -108,16 +108,13 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
             }
         })();
 
-        // Wait for both to complete
-        const [generatedContent, coverImageUrl] = await Promise.all([
-            textGenerationPromise,
-            imageGenerationPromise
-        ]);
+
 
         // Post-processing: Append image if it exists
-        let finalContent = generatedContent;
+        // Post-processing: Append image if it exists
+        let finalContent = refinedContent;
         if (coverImageUrl) {
-            finalContent = `![Cover Image](${coverImageUrl})\n\n${generatedContent}`;
+            finalContent = `![Cover Image](${coverImageUrl})\n\n${refinedContent}`;
             console.log("   🧩 Final Content Assembled. Preview: " + finalContent.substring(0, 50) + "...");
         }
 
@@ -125,12 +122,12 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         const post = await prisma.post.create({
             data: {
                 topic: data.topic,
-                content: generatedContent,
+                content: refinedContent,
                 tone: data.tone,
                 status: "DRAFT",
                 userId,
                 coverImage: coverImageUrl,
-                schemaMarkup: generateJSONLD(seoStrategy, generatedContent), // Generate and Save Schema
+                schemaMarkup: schemaMarkup, // Generate and Save Schema
             },
         });
 

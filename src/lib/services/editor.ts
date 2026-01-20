@@ -4,8 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export async function refinePost(draft: string, topic: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
-        generationConfig: { temperature: 0.1 } // Very low temperature for precision editing
+        model: "gemini-1.5-flash",
+        generationConfig: { temperature: 0.3 } // Flash is faster; slightly higher temp for creativity balance in editing
     });
 
     // Editor Persona & Criteria
