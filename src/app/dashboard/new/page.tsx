@@ -41,6 +41,8 @@ import { MarkdownViewer } from "@/components/markdown-viewer";
 
 type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
 
+export const maxDuration = 60; // Set timeout to 60 seconds (Vercel Hobby Limit)
+
 export default function NewPostPage() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();

@@ -14,6 +14,9 @@ import { optimizePost } from "@/features/post/actions/optimize-post";
 import { runSEOAnalysis, AnalyzeSEOResponse } from "@/features/post/actions/analyze-seo";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { convertMarkdownToHtml } from "@/lib/utils/markdown-to-html";
+import { copyToClipboardAsRichText } from "@/lib/utils/clipboard";
+import { WordPressDialog } from "@/features/publishing/components/wordpress-dialog";
 import { Label } from "@/components/ui/label";
 import {
     DropdownMenu,
@@ -139,6 +142,39 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
         toast.success("다운로드 완료");
     };
 
+    const handleSmartCopy = async () => {
+        const html = convertMarkdownToHtml(content);
+        // Clean up markdown for plain text copy
+        const plainText = content;
+
+        const success = await copyToClipboardAsRichText(html, plainText);
+        if (success) {
+            toast.success("스마트 복사 완료!", { description: "네이버/티스토리 등에 바로 붙여넣기 하세요." });
+        } else {
+            toast.error("복사 실패");
+        }
+    };
+
+    const handleDownloadImage = async () => {
+        if (!initialPost.coverImage) return;
+        try {
+            const response = await fetch(initialPost.coverImage);
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${initialPost.topic.replace(/\s+/g, "_")}_cover.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success("이미지 저장 완료");
+        } catch (error) {
+            console.error(error);
+            toast.error("이미지 다운로드 실패");
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 p-4 md:p-8 max-w-4xl mx-auto">
             {/* Print Area Wrapper */}
@@ -172,6 +208,15 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            {/* Smart Copy */}
+                            <Button variant="outline" size="sm" onClick={handleSmartCopy} className="gap-2 hidden sm:flex">
+                                <Copy className="h-4 w-4" />
+                                스마트 복사
+                            </Button>
+
+                            {/* WordPress Publish */}
+                            <WordPressDialog post={{ ...initialPost, content }} />
 
                             {/* SEO Analyzer */}
                             <Sheet modal={false}>
@@ -328,7 +373,7 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
 
                     <div className="flex flex-col gap-6">
                         {initialPost.coverImage && (
-                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted print:hidden">
+                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted group print:hidden">
                                 <Image
                                     src={initialPost.coverImage}
                                     alt={`Cover image for ${initialPost.topic}`}
@@ -336,6 +381,12 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                                     className="object-cover"
                                     priority
                                 />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button variant="secondary" onClick={handleDownloadImage} className="gap-2">
+                                        <Download className="h-4 w-4" />
+                                        이미지 다운로드
+                                    </Button>
+                                </div>
                             </div>
                         )}
 

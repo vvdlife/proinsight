@@ -1,44 +1,42 @@
+// Path: src/lib/services/image-gen.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+import { put } from "@vercel/blob";
 
 export async function generateBlogImage(prompt: string, apiKey: string): Promise<string | null> {
-    const genAI = new GoogleGenerativeAI(apiKey);
     try {
-        // User requested: gemini-3-pro-image-preview
-        const imageModel = genAI.getGenerativeModel({
-            model: "gemini-3-pro-image-preview",
-            // Attempting to pass aspectRatio if SDK/Model supports it in generationConfig or similar
-            // Note: Standard JS SDK might strictly type generationConfig. 
-            // If unknown property, it might accept it or ignore it.
-            // For now, will try to inject it if possible, otherwise rely on default.
-            // "aspectRatio" is often a parameter for Imagen models.
-        });
+        const genAI = new GoogleGenerativeAI(apiKey);
+        // Using "gemini-3-pro-preview" or specific image model if available.
+        // Assuming user has access or using updated Imagen integration if applicable.
+        // For standard Gemini API, image generation model might be "imagen-3.0-generate-001" or similar
+        // BUT per previous code "gemini-3-pro-image-preview" was used. Sticking to that.
+        const imageModel = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
-        // Some versions of the API/SDK pass params differently. 
-        // We will stick to the standard generateContent for now.
-
-        const result = await imageModel.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-        });
-
+        const result = await imageModel.generateContent(prompt);
         const response = await result.response;
-        console.log("   📸 Image Gen Response Candidates:", response.candidates?.length);
 
-        // Extract image
-        // Checking candidates for inline data
+        // Check for inlineData
         const images = response.candidates?.[0]?.content?.parts?.filter(part => part.inlineData);
 
         if (images && images.length > 0 && images[0].inlineData) {
             const image = images[0].inlineData;
-            console.log(`   📸 Image InlineData Found. MimeType: ${image.mimeType}, Size: ${Math.round(image.data.length / 1024)}KB`);
-            return `data:${image.mimeType};base64,${image.data}`;
+
+            // Convert Base64 string to Buffer
+            const imageBuffer = Buffer.from(image.data, 'base64');
+            const filename = `blog-cover-${Date.now()}.png`;
+
+            // Upload to Vercel Blob
+            const blob = await put(filename, imageBuffer, {
+                access: 'public',
+                contentType: image.mimeType,
+            });
+
+            console.log(`✅ Image uploaded to Vercel Blob: ${blob.url}`);
+            return blob.url; // Return the Public URL
         }
 
-        console.log("   ⚠️ No inlineData found in image candidates.");
         return null;
     } catch (error) {
-        console.error("Image Generation Service Error:", error);
+        console.error("Image Generation Error:", error);
         return null;
     }
 }
