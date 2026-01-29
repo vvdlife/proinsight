@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import Link from "next/link";
-import { DeletePostButton } from "@/components/delete-post-button";
+import { DeletePostButton } from "@/features/post/components/DeletePostButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";

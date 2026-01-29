@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, Pencil, Save, X } from "lucide-react";
-import { MarkdownViewer } from "@/components/markdown-viewer";
+import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
 import { CopyButton } from "@/components/copy-button";
 import { auth } from "@clerk/nextjs/server";
 import { PostDetailClient } from "./post-detail-client";

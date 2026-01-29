@@ -13,7 +13,7 @@ export interface SearchResponse {
     results: SearchResult[];
 }
 
-export async function searchWeb(query: string): Promise<SearchResponse> {
+export async function searchWeb(query: string, depth: "basic" | "advanced" = "advanced"): Promise<SearchResponse> {
     const apiKey = process.env.TAVILY_API_KEY;
 
     if (!apiKey) {
@@ -32,7 +32,7 @@ export async function searchWeb(query: string): Promise<SearchResponse> {
             body: JSON.stringify({
                 api_key: apiKey,
                 query: query,
-                search_depth: "advanced", // Deep Research
+                search_depth: depth, // Configurable depth
                 include_answer: true,     // Direct answer from Tavily
                 include_raw_content: false, // content is usually enough, raw is too big
                 max_results: 5,

@@ -1,8 +1,18 @@
 // Path: src/lib/services/ai.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { PostFormValues } from "@/lib/schemas/post-schema";
 
-// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+// Helper: Get Configured Gemini Model
+function getGeminiModel(apiKey: string, modelName: string, temperature: number = 0.2, mimeType?: string): GenerativeModel {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+            responseMimeType: mimeType,
+            temperature: temperature
+        }
+    });
+}
 
 // Output structure for Phase 1: Engineer
 interface OutlineSection {
@@ -19,15 +29,8 @@ import { SEOStrategy } from "./seo-planner";
 
 // Phase 1: The Architect - Generates a logical outline
 async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<Outline> {
-    const genAI = new GoogleGenerativeAI(apiKey);
     // User requested Gemini 3 Flash or Pro. Using "gemini-3-pro-preview" for maximum Quality.
-    const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
-        generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2
-        }
-    });
+    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.2, "application/json");
 
     const prompt = `
 You are a Senior Content Architect.
@@ -45,14 +48,14 @@ ${searchContext || "No search context provided."}
 
 INSTRUCTIONS:
 1. Analyze the 'search_context' to identify key themes and logical flow.
-2. Structure the post into 5-8 distinct sections.
+2. Structure the post into 4-5 highly comprehensive and information-dense sections. (Focus on quality over quantity)
 3. **CRITICAL**: The first section MUST be named "Key Takeaways (3줄 요약)".
 4. **CRITICAL**: The LAST section MUST be named "자주 묻는 질문 (FAQ)".
 5. **E-E-A-T & SEO Strategy**:
    - Integrate these Target Keywords into the headings naturally: ${seoStrategy?.targetKeywords.join(", ") || "N/A"}.
    - Use these H2 suggestions if relevant: ${seoStrategy?.h2Suggestions.join(", ") || "N/A"}.
    - Address the Search Intent: "${seoStrategy?.searchIntent || "Informational"}".
-6. For each section, define the 'heading' and 2-4 'key_points' to cover.
+6. For each section, define the 'heading' and 4-6 detailed 'key_points' to cover. ensure deep analysis.
 7. **CRITICAL**: Do NOT include numbers in the 'heading' string. (e.g., Use "Introduction", NOT "1. Introduction").
 8. Ensure the flow is logical: Key Takeaways -> Introduction -> Core Concepts / Background -> In-Depth Analysis -> Real-world Examples -> FAQ -> Conclusion.
 9. LANGUAGE: The title, headings, and key points MUST be in KOREAN (한국어).
@@ -90,12 +93,8 @@ async function generateSection(
     searchContext: string | undefined,
     apiKey: string
 ): Promise<string> {
-    const genAI = new GoogleGenerativeAI(apiKey);
     // Using gemini-3-pro-preview for high-quality writing
-    const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview",
-        generationConfig: { temperature: 0.2 }
-    });
+    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.2);
 
     const prompt = `
 You are a Senior Technical Analyst. Write ONE section of a blog post.
@@ -211,19 +210,14 @@ ${referencesSection}
 
 export async function generateBlogImage(prompt: string, apiKey: string): Promise<string | null> {
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const imageModel = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+        // User requested "Nano Banana" model which maps to "gemini-2.5-flash-image"
+        const imageModel = getGeminiModel(apiKey, "gemini-2.5-flash-image");
 
         const result = await imageModel.generateContent(prompt);
         const response = await result.response;
 
-        // Imagen usually returns inlineData (Base64) in the parts
-        // Checking specifically for standard Gemini API image response structure
-        // Note: SDK structure for images might vary, checking candidates or parts
-        // Assuming standard safety and parts structure
-
-        // For now, let's dump the response structure in logs if needed, but try standard access
-        // API typically returns 1 candidate with inlineData if successful
+        // Extract image from response (Standard Gemini Image format)
+        // Usually resides in candidates[0].content.parts[0].inlineData
         const images = response.candidates?.[0]?.content?.parts?.filter(part => part.inlineData);
 
         if (images && images.length > 0 && images[0].inlineData) {
@@ -231,20 +225,21 @@ export async function generateBlogImage(prompt: string, apiKey: string): Promise
             return `data:${image.mimeType};base64,${image.data}`;
         }
 
-        return null;
+        console.warn("No image data found in Nano Banana response. Falling back...");
+        throw new Error("No image data returned.");
+
     } catch (error) {
-        console.error("Image Generation Error:", error);
-        return null;
+        console.error("Nano Banana Image Generation Error:", error);
+        // Fallback to Pollinations if Nano Banana fails (fail-safe)
+        console.log("🔄 Fallback: Using Pollinations.ai due to API error.");
+        const encodedPrompt = encodeURIComponent(prompt);
+        return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&nologo=true&model=flux`;
     }
 }
 
 export async function optimizeContent(content: string, suggestions: string[], apiKey: string): Promise<string> {
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview",
-            generationConfig: { temperature: 0.2 }
-        });
+        const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.2);
 
         const prompt = `
         You are a Professional Content Editor.
@@ -310,3 +305,59 @@ export function generateJSONLD(strategy: SEOStrategy, postContent: string): stri
 }
 
 
+
+export interface RecommendedTopic {
+    topic: string;
+    keywords: string;
+    reason: string;
+}
+
+export async function recommendTopics(searchContext: string | undefined, category: string, apiKey: string): Promise<RecommendedTopic[]> {
+    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.7, "application/json");
+
+    const prompt = `
+    You are a Tech Trend Analyst and Content Strategist.
+    Your goal is to suggest 5 compelling, trendy blog post topics based on the provided search context and category.
+
+    Category: ${category}
+
+    search_context:
+    """
+    ${searchContext || "No specific context provided. Use general knowledge about 2024-2025 trends."}
+    """
+
+    INSTRUCTIONS:
+    1. Analyze the 'search_context' to identify rising trends, hot debates, or new technologies.
+    2. Generate 5 distinct potential blog topics.
+    3. **Criteria for Good Topics**:
+       - Provocative or Insightful (Not just "What is AI?", but "Why AI Agents are replacing Chatbots").
+       - Specific and Niche (avoid too broad topics).
+       - SEO-friendly.
+    4. LANGUAGE: Korean (한국어).
+    5. Output JSON structure:
+    [
+      {
+        "topic": "Title of the post",
+        "keywords": "comma, separated, keywords",
+        "reason": "Why this is trending now (1 sentence)"
+      }
+    ]
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        // Robust JSON Extraction
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            throw new Error("No JSON List found in response");
+        }
+
+        return JSON.parse(jsonMatch[0]) as RecommendedTopic[];
+    } catch (error) {
+        console.error("Topic Recommendation Failed:", error);
+        return [];
+    }
+}

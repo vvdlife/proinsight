@@ -37,7 +37,8 @@ import { PostFormValues, postSchema } from "@/lib/schemas/post-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { MarkdownViewer } from "@/components/markdown-viewer";
+import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
+import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
 type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
 
@@ -114,7 +115,15 @@ export default function NewPostPage() {
                                 name="topic"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>주제 (Topic)</FormLabel>
+                                        <div className="flex items-center justify-between">
+                                            <FormLabel>주제 (Topic)</FormLabel>
+                                            <TopicRecommender
+                                                onSelectTopic={(topic, keywords) => {
+                                                    form.setValue("topic", topic);
+                                                    form.setValue("keywords", keywords);
+                                                }}
+                                            />
+                                        </div>
                                         <FormControl>
                                             <Input placeholder="예: 2024년 생성형 AI 트렌드" {...field} />
                                         </FormControl>
