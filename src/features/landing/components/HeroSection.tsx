@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export function HeroSection() {
   return (
@@ -14,6 +15,23 @@ export function HeroSection() {
       <div className="absolute top-0 z-[-2] h-screen w-screen bg-[radial-gradient(100%_50%_at_50%_0%,rgba(0,163,255,0.13)_0,rgba(0,163,255,0)_50%,rgba(0,163,255,0)_100%)]" />
 
       <div className="container mx-auto flex max-w-5xl flex-col items-center text-center">
+        {/* Logo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <Image
+            src="/logo.png"
+            alt="ProInsight Logo"
+            width={200}
+            height={200}
+            className="h-32 w-auto object-contain rounded-2xl shadow-xl"
+            priority
+          />
+        </motion.div>
+
         {/* Badge / Tag */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -66,14 +84,6 @@ export function HeroSection() {
             <Link href="/dashboard">
               Start Generating <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-12 px-8 text-base"
-            asChild
-          >
-            <Link href="#demo">View Demo</Link>
           </Button>
         </motion.div>
 
