@@ -6,19 +6,33 @@ import { revalidatePath } from "next/cache";
 
 export type SocialPlatform = "instagram" | "twitter" | "linkedin";
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function generateAndSaveSocialPosts(postId: string, postContent: string) {
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, message: "Unauthorized" };
+        }
+
+        // Get API Key
+        const settings = await prisma.userSettings.findUnique({
+            where: { userId },
+            select: { apiKey: true },
+        });
+        const apiKey = settings?.apiKey || process.env.GOOGLE_GEMINI_API_KEY;
+
+        if (!apiKey) {
+            return { success: false, message: "API Key not found" };
+        }
+
         // 1. Check if posts already exist
         const existingPosts = await prisma.socialPost.findMany({
             where: { postId },
         });
 
         if (existingPosts.length > 0) {
-            // If ANY exist, return them (or currently just return success so UI can fetch)
-            // Implementation choice: We can support "Regenerate" by deleting old ones first?
-            // For now, let's assume "Generate All" runs only if empty or explicitly requested.
-            // But safety first: let's generate missing ones or overwrite if requested.
-            // Simple v1: Generate all 3 in parallel and upsert.
+            // Logic to skip or regenerate could go here
         }
 
         // 2. Generate content for all 3 platforms in parallel
@@ -27,7 +41,7 @@ export async function generateAndSaveSocialPosts(postId: string, postContent: st
         // Run AI generation in parallel
         const results = await Promise.all(
             platforms.map(async (platform) => {
-                const result = await generateSocialContent(postContent, platform);
+                const result = await generateSocialContent(postContent, platform, apiKey);
                 return { platform, result };
             })
         );
@@ -35,9 +49,18 @@ export async function generateAndSaveSocialPosts(postId: string, postContent: st
         // 3. Save to DB (Transaction)
         await prisma.$transaction(
             results.map(({ platform, result }) => {
-                if (!result.success || !result.data) {
-                    throw new Error(`Failed to generate content for ${platform}`);
-                }
+                // If individual generation failed, we might want to log it but continue?
+                // For now, adhere to strict success check or throw.
+                // However, throwing breaks Promise.all if not caught.
+                // But here result is the return value of generateSocialContent which throws on error.
+                // Wait, generateSocialContent throws error. So Promise.all would have failed effectively if not handled.
+                // Let's assume generateSocialContent ensures result or throws.
+
+                // Oops, my generateSocialContent throws error on catch. 
+                // So the entire generateAndSaveSocialPosts catch block will handle it.
+
+                // But TypeScript doesn't know result shape might be error-like if I didn't return a "success: false" object from generateSocialContent?
+                // generateSocialContent returns Promise<SocialContentResult>. It throws if failed.
 
                 return prisma.socialPost.upsert({
                     where: {
@@ -47,14 +70,14 @@ export async function generateAndSaveSocialPosts(postId: string, postContent: st
                         },
                     },
                     update: {
-                        content: result.data.content,
-                        hashtags: result.data.hashtags,
+                        content: result.content,
+                        hashtags: result.hashtags,
                     },
                     create: {
                         postId,
                         platform,
-                        content: result.data.content,
-                        hashtags: result.data.hashtags,
+                        content: result.content,
+                        hashtags: result.hashtags,
                     },
                 });
             })
@@ -65,6 +88,6 @@ export async function generateAndSaveSocialPosts(postId: string, postContent: st
 
     } catch (error) {
         console.error("Failed to generate social posts:", error);
-        return { success: false, message: "Soical content generation failed" };
+        return { success: false, message: "Social content generation failed" };
     }
 }
