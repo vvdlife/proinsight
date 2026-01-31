@@ -1,12 +1,11 @@
-```
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Kept original theme
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
     Table,
     TableBody,
@@ -21,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { toPng } from 'html-to-image';
-import { toast } from "sonner"; // Assuming sonner is used, or alert.
+import { toast } from "sonner";
 
 interface MarkdownViewerProps {
     content: string;
@@ -31,17 +30,27 @@ const Mermaid = ({ chart }: { chart: string }) => {
     const [svg, setSvg] = useState<string>("");
     const [isFullscreen, setIsFullscreen] = useState(false);
     const chartRef = useRef<HTMLDivElement>(null);
-    const uniqueId = useMemo(() => `mermaid - ${ Math.random().toString(36).substr(2, 9) } `, []);
+    const uniqueId = useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, []);
 
     useEffect(() => {
         const renderChart = async () => {
             try {
+                // Smart Style Injection: Automatically add semantic classes
+                const semanticStyles = `
+classDef ai fill:#eff6ff,stroke:#60a5fa,stroke-width:2px,color:#1e293b;
+classDef human fill:#fdf4ff,stroke:#e879f9,stroke-width:2px,color:#1e293b;
+classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
+`.trim();
+
+                // Append styles to the chart content
+                const enhancedChart = `${chart}\n${semanticStyles}`;
+
                 // Determine theme based on system preference or default to base
-                const { svg } = await mermaid.render(uniqueId, chart);
+                const { svg } = await mermaid.render(uniqueId, enhancedChart);
                 setSvg(svg);
             } catch (error) {
                 console.error("Mermaid rendering failed:", error);
-                setSvg(`< div class="text-red-500 p-4 border border-red-200 rounded" > Failed to render diagram</div > `);
+                setSvg(`<div class="text-red-500 p-4 border border-red-200 rounded bg-red-50">Failed to render diagram</div>`);
             }
         };
         renderChart();
@@ -70,10 +79,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
     const handleDownload = async () => {
         if (chartRef.current) {
             try {
-                // Create a clone to render with specific styles if needed, 
-                // but direct capture usually works. 
-                // We capture the SVG container.
-                const dataUrl = await toPng(chartRef.current, { 
+                const dataUrl = await toPng(chartRef.current, {
                     backgroundColor: '#ffffff',
                     quality: 1.0,
                     pixelRatio: 2 // High res
@@ -99,87 +105,87 @@ const Mermaid = ({ chart }: { chart: string }) => {
         <>
             {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
             <style>{`
-    /* 1. Reset & Typography */
-    .mermaid.nodeLabel, .mermaid.edgeLabel, .mermaid.label, .mermaid.node text {
-    font - family: 'Pretendard', 'Inter', -apple - system, BlinkMacSystemFont, system - ui, sans - serif!important;
-    font - weight: 600!important;
-    font - size: 15px!important; /* Render size */
-    line - height: 1.5!important;
-    letter - spacing: -0.01em!important;
-    color: #1e293b!important; /* slate-800 */
-    fill: #1e293b!important;
+/* 1. Reset & Typography */
+.mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
+    font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 15px !important; /* Render size */
+    line-height: 1.5 !important;
+    letter-spacing: -0.01em !important;
+    color: #1e293b !important; /* slate-800 */
+    fill: #1e293b !important;
 }
 
-                /* 2. Nodes: The "Card" Look */
-                .mermaid.node rect, .mermaid.node polygon, .mermaid.node circle, .mermaid.node ellipse, .mermaid.node path {
-    fill: #ffffff!important;
-    stroke: #cbd5e1!important; /* slate-300 */
-    stroke - width: 1.5px!important;
+/* 2. Nodes: The "Card" Look */
+.mermaid .node rect, .mermaid .node polygon, .mermaid .node circle, .mermaid .node ellipse, .mermaid .node path {
+    fill: #ffffff !important;
+    stroke: #cbd5e1 !important; /* slate-300 */
+    stroke-width: 1.5px !important;
 
     /* Deep, rich shadow (Tailwind shadow-xl equivalent) */
-    filter: drop - shadow(0 20px 25px - 5px rgb(0 0 0 / 0.04)) drop - shadow(0 8px 10px - 6px rgb(0 0 0 / 0.01))!important;
+    filter: drop-shadow(0 20px 25px -5px rgb(0 0 0 / 0.04)) drop-shadow(0 8px 10px -6px rgb(0 0 0 / 0.01)) !important;
 
-    transition: all 0.3s cubic - bezier(0.4, 0, 0.2, 1)!important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-                /* Shape Refinements */
-                .mermaid.node rect {
-    rx: 16px!important; /* More rounded */
-    ry: 16px!important;
+/* Shape Refinements */
+.mermaid .node rect {
+    rx: 16px !important; /* More rounded */
+    ry: 16px !important;
 }
 
-                /* 3. Interactive Hover Effects */
-                /* We target the group (g) hover if possible, but styling the rect on hover works best */
-                .mermaid g.node:hover rect, 
-                .mermaid g.node:hover polygon, 
-                .mermaid g.node:hover circle {
-    stroke: #6366f1!important; /* Indigo-500 */
-    stroke - width: 2px!important;
-    fill: #f8fafc!important; /* Slate-50 */
+/* 3. Interactive Hover Effects */
+/* We target the group (g) hover if possible, but styling the rect on hover works best */
+.mermaid g.node:hover rect, 
+.mermaid g.node:hover polygon, 
+.mermaid g.node:hover circle {
+    stroke: #6366f1 !important; /* Indigo-500 */
+    stroke-width: 2px !important;
+    fill: #f8fafc !important; /* Slate-50 */
     /* Lift effect via filter */
-    filter: drop - shadow(0 25px 50px - 12px rgb(99 102 241 / 0.15))!important;
+    filter: drop-shadow(0 25px 50px -12px rgb(99 102 241 / 0.15)) !important;
 }
-                .mermaid g.node: hover.nodeLabel,
-                .mermaid g.node:hover text {
-    color: #4338ca!important; /* Indigo-700 */
-    fill: #4338ca!important;
-}
-
-                /* 4. Edges: Smooth & Subtle */
-                .mermaid.edgePath.path {
-    stroke: #94a3b8!important; /* Slate-400 */
-    stroke - width: 2px!important;
-    stroke - linecap: round!important;
-    opacity: 0.8!important;
-    transition: all 0.3s ease!important;
-}
-                .mermaid.edgePath.path:hover {
-    stroke: #6366f1!important;
-    opacity: 1!important;
-    stroke - width: 3px!important;
-}
-                .mermaid.arrowheadPath {
-    fill: #94a3b8!important;
-    stroke: none!important;
+.mermaid g.node:hover .nodeLabel,
+.mermaid g.node:hover text {
+    color: #4338ca !important; /* Indigo-700 */
+    fill: #4338ca !important;
 }
 
-                /* 5. Dark Mode Logic */
-                .dark.mermaid.node rect, .dark.mermaid.node polygon, .dark.mermaid.node circle {
-    fill: #18181b!important; /* zinc-900 */
-    stroke: #3f3f46!important; /* zinc-700 */
-    filter: drop - shadow(0 10px 15px - 3px rgb(0 0 0 / 0.5))!important;
+/* 4. Edges: Smooth & Subtle */
+.mermaid .edgePath path {
+    stroke: #94a3b8 !important; /* Slate-400 */
+    stroke-width: 2px !important;
+    stroke-linecap: round !important;
+    opacity: 0.8 !important;
+    transition: all 0.3s ease !important;
 }
-                .dark.mermaid.nodeLabel, .dark.mermaid.edgeLabel, .dark.mermaid text {
-    color: #e4e4e7!important; /* zinc-200 */
-    fill: #e4e4e7!important;
+.mermaid .edgePath path:hover {
+    stroke: #6366f1 !important;
+    opacity: 1 !important;
+    stroke-width: 3px !important;
 }
-                .dark.mermaid g.node:hover rect {
-    stroke: #818cf8!important; /* indigo-400 */
-    fill: #27272a!important; /* zinc-800 */
-    filter: drop - shadow(0 0 20px rgb(129 140 248 / 0.2))!important;
+.mermaid .arrowheadPath {
+    fill: #94a3b8 !important;
+    stroke: none !important;
+}
+
+/* 5. Dark Mode Logic */
+.dark .mermaid .node rect, .dark .mermaid .node polygon, .dark .mermaid .node circle {
+    fill: #18181b !important; /* zinc-900 */
+    stroke: #3f3f46 !important; /* zinc-700 */
+    filter: drop-shadow(0 10px 15px -3px rgb(0 0 0 / 0.5)) !important;
+}
+.dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid text {
+    color: #e4e4e7 !important; /* zinc-200 */
+    fill: #e4e4e7 !important;
+}
+.dark .mermaid g.node:hover rect {
+    stroke: #818cf8 !important; /* indigo-400 */
+    fill: #27272a !important; /* zinc-800 */
+    filter: drop-shadow(0 0 20px rgb(129 140 248 / 0.2)) !important;
 }
 `}</style>
-            
+
             {/* Inline View */}
             <div className="relative group w-full my-8 bg-white/50 dark:bg-zinc-900/50 rounded-xl border border-slate-200 dark:border-zinc-800 p-2 overflow-hidden hover:border-indigo-400 transition-colors duration-300">
                 {svg.startsWith("<div") ? (
@@ -193,14 +199,19 @@ const Mermaid = ({ chart }: { chart: string }) => {
                         </div>
                     </div>
                 ) : (
-                    <div 
+                    <div
                         className="overflow-x-auto p-4 flex justify-center min-h-[150px] items-center cursor-zoom-in"
                         onClick={() => setIsFullscreen(true)}
                         dangerouslySetInnerHTML={{ __html: svg }}
                     />
                 )}
-                
+
                 {!svg.startsWith("<div") && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white dark:bg-black/50 dark:hover:bg-black/80 backdrop-blur-sm"
+                        onClick={(e) => {
                             e.stopPropagation();
                             setIsFullscreen(true);
                         }}
@@ -212,23 +223,57 @@ const Mermaid = ({ chart }: { chart: string }) => {
 
             {isFullscreen && (
                 <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md p-4 md:p-8 flex flex-col animate-in fade-in duration-200">
-                    <div className="flex justify-end mb-4">
+                    <div className="flex justify-end mb-4 gap-2">
+                        {/* Download Button */}
+                        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                            <Download className="h-4 w-4" />
+                            <span>PNG 저장</span>
+                        </Button>
+                        {/* Copy Source Button */}
+                        <Button variant="outline" size="sm" onClick={handleCopySource} className="gap-2">
+                            <Copy className="h-4 w-4" />
+                            <span>코드 복사</span>
+                        </Button>
+                        {/* Close Button */}
                         <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(false)}>
                             <X className="h-6 w-6" />
                         </Button>
                     </div>
                     <div
-                        className="flex-1 overflow-auto flex justify-center items-start border rounded-xl bg-white dark:bg-zinc-900 p-8 shadow-2xl"
+                        className="flex-1 overflow-auto flex justify-center items-start border rounded-xl bg-white dark:bg-zinc-900 p-8 shadow-2xl relative"
                         onClick={(e) => {
-                            // Close if clicking outside the SVG area (optional, but convenient)
                             if (e.target === e.currentTarget) setIsFullscreen(false);
                         }}
                     >
-                        <div
-                            className="min-w-min pointer-events-none" // prevent interacting with internal text to avoid weird selection behavior, or keep standard.
-                            dangerouslySetInnerHTML={{ __html: svg }}
-                            style={{ transform: 'scale(1)', transformOrigin: 'top center' }}
-                        />
+                        <TransformWrapper
+                            initialScale={1}
+                            minScale={0.5}
+                            maxScale={3}
+                            centerOnInit
+                        >
+                            {({ zoomIn, zoomOut, resetTransform }) => (
+                                <>
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 bg-background/80 backdrop-blur rounded-lg border shadow-lg z-10">
+                                        <Button variant="ghost" size="icon" onClick={() => zoomIn()}>
+                                            <ZoomIn className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => zoomOut()}>
+                                            <ZoomOut className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => resetTransform()}>
+                                            <RotateCcw className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <TransformComponent wrapperClass="w-full h-full" contentClass="w-full h-full flex items-center justify-center">
+                                        <div
+                                            ref={chartRef}
+                                            className="min-w-min"
+                                            dangerouslySetInnerHTML={{ __html: svg }}
+                                        />
+                                    </TransformComponent>
+                                </>
+                            )}
+                        </TransformWrapper>
                     </div>
                 </div>
             )}
@@ -405,11 +450,11 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                     h1: ({ children }) => <h1 id={slugify(String(children))}>{children}</h1>,
                     h2: ({ children }) => <h2 id={slugify(String(children))} className="group flex items-center gap-2">
                         {children}
-                        <a href={`#${ slugify(String(children)) } `} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">#</a>
+                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">#</a>
                     </h2>,
                     h3: ({ children }) => <h3 id={slugify(String(children))} className="group flex items-center gap-2">
                         {children}
-                        <a href={`#${ slugify(String(children)) } `} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary text-sm">#</a>
+                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary text-sm">#</a>
                     </h3>,
 
                     // 1. Table -> Shadcn Table

@@ -127,13 +127,28 @@ STRICT INSTRUCTIONS:
      > [!TIP] This is a pro tip.
      > [!WARNING] Be careful with this.
    - **Tables**: Use Markdown tables for ANY comparison or structured data.
-   - **Diagrams**: Use \`mermaid\` code blocks for processes or flows.
-     **IMPORTANT**: You MUST quote all node labels to support Korean text and symbols.
-     **CRITICAL**: Use the \`A -- "Text" --> B\` syntax for edge labels. DO NOT use \`-->|Text|\`.
+   - **Diagrams**: Use \`mermaid\` code blocks to visualize processes, flows, or architectures.
+     **STRATEGIC DIAGRAMMING RULES (MUST FOLLOW):**
+     1. **Direction**: Use \`graph LR\` for sequential processes (Time/Step), \`graph TD\` for hierarchies/structures.
+     2. **Subgraphs**: ALWAYS group related nodes into \`subgraph\` blocks to show phases (e.g., "Planning", "Execution").
+     3. **Semantics (Classes)**: Apply these classes to colored nodes:
+        - \`:::ai\` for AI/Automated steps (Blue)
+        - \`:::human\` for Human input/Review (Purple)
+        - \`:::data\` for Documents/Data/Output (Green)
+     4. **Visuals**: Add relevant EMOJIS to every node label (e.g., "🤖 분석", "📄 보고서").
+     5. **Syntax**:
+        - **Quoting**: YOU MUST DOUBLE-QUOTE ALL KOREAN LABELS. (e.g., \`A["🤖 AI 분석"]\`)
+        - **Edge Labels**: Use \`-- "Label" -->\` syntax.
+     
      Example:
      \`\`\`mermaid
-     graph TD
-       A["시작 (Start)"] -- "조건 (Condition)" --> B["결과 (Result)"]
+     graph LR
+       subgraph Planning ["📅 기획 단계"]
+         A["👤 사용자 입력"]:::human -- "주제 설정" --> B["🤖 데이터 분석"]:::ai
+       end
+       subgraph Production ["🏭 제작 단계"]
+         B --> C["📄 초안 생성"]:::data
+       end
      \`\`\`
    - **FAQ Schema**:
      - IF and ONLY IF this section is "FAQ" or "자주 묻는 질문":
@@ -369,8 +384,8 @@ export interface SocialContentResult {
 }
 
 export async function generateSocialContent(
-    postContent: string, 
-    platform: 'instagram' | 'twitter' | 'linkedin', 
+    postContent: string,
+    platform: 'instagram' | 'twitter' | 'linkedin',
     apiKey: string
 ): Promise<SocialContentResult> {
     const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.7, "application/json");
@@ -426,7 +441,7 @@ export async function generateSocialContent(
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        
+
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error("No JSON found in response");
