@@ -41,7 +41,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
     }, [chart]);
 
     return (
-        <div className="w-full overflow-x-auto my-8 flex justify-center bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4">
+        <div className="w-full overflow-x-auto my-8 bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4">
             {svg.startsWith("<div") ? (
                 // Error State
                 <div className="space-y-2 w-full">
@@ -54,12 +54,16 @@ const Mermaid = ({ chart }: { chart: string }) => {
                     </div>
                 </div>
             ) : (
-                // Success State with explicit width handling for svg
-                <div
-                    ref={ref}
-                    className="mermaid-svg-container min-w-min w-full"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                />
+                // Success State
+                // Use flex and justify-center on an inner wrapper to center if smaller than screen, 
+                // but allow expansion if larger.
+                <div className="w-full flex justify-center min-w-min">
+                    <div
+                        ref={ref}
+                        className="mermaid-svg-container"
+                        dangerouslySetInnerHTML={{ __html: svg }}
+                    />
+                </div>
             )}
         </div>
     );
@@ -158,15 +162,19 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            theme: "base",
+            theme: "neutral",
+            securityLevel: "loose",
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+            flowchart: {
+                useMaxWidth: false, // Prevents auto-scaling to container width (allows scrolling)
+                htmlLabels: true,
+                curve: 'basis',
+            },
             themeVariables: {
-                fontFamily: 'inherit',
-                fontSize: '16px',
-                darkMode: true,
+                fontSize: '15px', // Slightly smaller than 16px to prevent clipping in boxes
                 primaryColor: '#e0e0e0',
                 lineColor: '#666',
             },
-            securityLevel: "loose",
         });
     }, []);
 
