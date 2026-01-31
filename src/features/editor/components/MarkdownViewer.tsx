@@ -64,6 +64,10 @@ const Mermaid = ({ chart }: { chart: string }) => {
     );
 };
 
+// Helper to slugify text for IDs (must match TOC behavior)
+const slugify = (text: string) =>
+    text.toLowerCase().replace(/[^\w\s-가-힣]/g, '').trim().replace(/\s+/g, '-');
+
 export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
@@ -74,25 +78,46 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     }, []);
 
     return (
-        <div className="prose prose-stone dark:prose-invert max-w-none w-full min-h-[500px] px-4 py-2 text-foreground">
+        <div className="prose prose-stone dark:prose-invert max-w-none w-full px-4 py-2 text-foreground 
+            prose-headings:scroll-mt-20 prose-headings:font-bold prose-headings:tracking-tight
+            prose-h1:text-3xl prose-h1:mb-8
+            prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:border-b prose-h2:pb-2
+            prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
+            prose-p:leading-8 prose-p:mb-6 prose-p:text-[1.05rem]
+            prose-li:leading-7 prose-li:my-2
+            prose-strong:text-primary/90 prose-strong:font-bold
+            prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-primary/50 prose-blockquote:bg-muted/30 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:my-8
+            prose-code:before:content-none prose-code:after:content-none
+        ">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                urlTransform={(url) => url} // Allow Data URIs
+                urlTransform={(url) => url}
                 components={{
+                    // 0. Headings with IDs for TOC
+                    h1: ({ children }) => <h1 id={slugify(String(children))}>{children}</h1>,
+                    h2: ({ children }) => <h2 id={slugify(String(children))} className="group flex items-center gap-2">
+                        {children}
+                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">#</a>
+                    </h2>,
+                    h3: ({ children }) => <h3 id={slugify(String(children))} className="group flex items-center gap-2">
+                        {children}
+                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary text-sm">#</a>
+                    </h3>,
+
                     // 1. Table -> Shadcn Table
                     table: ({ children }) => (
-                        <div className="my-6 w-full overflow-y-auto border rounded-lg">
+                        <div className="my-8 w-full overflow-y-auto border rounded-xl shadow-sm">
                             <Table>{children}</Table>
                         </div>
                     ),
                     thead: ({ children }) => <TableHeader className="bg-muted/50">{children}</TableHeader>,
                     tbody: ({ children }) => <TableBody>{children}</TableBody>,
-                    tr: ({ children }) => <TableRow className="hover:bg-muted/30">{children}</TableRow>,
-                    th: ({ children }) => <TableHead className="font-bold text-foreground">{children}</TableHead>,
-                    td: ({ children }) => <TableCell className="text-muted-foreground">{children}</TableCell>,
+                    tr: ({ children }) => <TableRow className="hover:bg-muted/30 transition-colors">{children}</TableRow>,
+                    th: ({ children }) => <TableHead className="font-bold text-foreground py-3">{children}</TableHead>,
+                    td: ({ children }) => <TableCell className="text-muted-foreground py-3">{children}</TableCell>,
 
                     // 2. HR -> Separator
-                    hr: () => <Separator className="my-8" />,
+                    hr: () => <Separator className="my-12" />,
 
                     // 3. Links -> External Link
                     a: ({ href, children }) => (
@@ -100,36 +125,22 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-medium underline underline-offset-4 text-primary hover:text-primary/80 inline-flex items-center gap-1"
+                            className="font-medium underline underline-offset-4 decoration-primary/30 hover:decoration-primary text-foreground hover:text-primary transition-all inline-flex items-center gap-1"
                         >
                             {children}
-                            <ExternalLink className="h-3 w-3" />
+                            <ExternalLink className="h-3 w-3 opacity-70" />
                         </a>
                     ),
 
-                    // 4. Blockquote -> Shadcn Alert (Try to detect type)
+                    // 4. Blockquote -> Custom Style (Replacing previous Alert logic for cleaner look, or keeping it but styled better)
+                    // Let's use the CSS-based blockquote for standard quotes, and Alert for specific callouts if needed.
+                    // But re-using the Alert logic is fine if we style it well.
+                    // Actually, let's revert to standard blockquote for better "blog" feel, unless it's a callout.
                     blockquote: ({ children }) => {
-                        // Helper to traverse children and find text
-                        // Simplification: We assume the AI follows "> [!NOTE] Content" format which yields <p>[!NOTE] Content</p> inside blockquote
-
-                        // We will render a default Alert, but style it based on first line if possible.
-                        // Since we can't easily inspect children props in a generic way without deep cloning, 
-                        // we will use a generic "Quote/Callout" style here or use simple CSS based approach 
-                        // BUT, strict requirement says map to Alert.
-
-                        // Let's rely on the fact that 'children' is likely a <p>
-                        // We'll wrap it in a generic Info Alert for now to satisfy the "Callouts" requirement visually.
-                        // To perfectly parse [!NOTE], we'd need a custom remark plugin or deeper parsing.
-                        // For this iteration, we treat ALL blockquotes as "Callouts/Notes".
-
                         return (
-                            <Alert className="my-6 border-l-4 border-l-primary bg-muted/20">
-                                <Info className="h-4 w-4" />
-                                <AlertTitle className="mb-2 font-bold">Note</AlertTitle>
-                                <AlertDescription className="text-muted-foreground">
-                                    {children}
-                                </AlertDescription>
-                            </Alert>
+                            <blockquote className="my-8 border-l-4 border-primary/40 pl-6 py-2 italic bg-muted/20 rounded-r-lg">
+                                {children}
+                            </blockquote>
                         );
                     },
 
@@ -145,7 +156,10 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
 
                         if (!inline && match) {
                             return (
-                                <div className="rounded-md overflow-hidden my-4 border">
+                                <div className="rounded-lg overflow-hidden my-6 border shadow-sm">
+                                    <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b text-xs text-muted-foreground font-mono">
+                                        <span>{lang}</span>
+                                    </div>
                                     <SyntaxHighlighter
                                         style={oneDark}
                                         language={match[1]}
@@ -160,7 +174,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                         }
 
                         return (
-                            <code className={cn("bg-muted px-1.5 py-0.5 rounded font-mono text-sm", className)} {...props}>
+                            <code className={cn("bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-mono text-[0.9em] font-medium", className)} {...props}>
                                 {children}
                             </code>
                         );
