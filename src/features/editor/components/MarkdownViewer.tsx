@@ -64,55 +64,86 @@ const Mermaid = ({ chart }: { chart: string }) => {
 
     return (
         <>
-            {/* Global Style Override for Mermaid to fix truncation & Modernize Design */}
+            {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
             <style>{`
-                /* Modern Mermaid Design - Nodes */
-                .mermaid .node rect, .mermaid .node circle, .mermaid .node ellipse, .mermaid .node polygon, .mermaid .node path {
+                /* 1. Reset & Typography */
+                .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
+                    font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+                    font-weight: 600 !important;
+                    font-size: 15px !important; /* Render size */
+                    line-height: 1.5 !important;
+                    letter-spacing: -0.01em !important;
+                    color: #1e293b !important; /* slate-800 */
+                    fill: #1e293b !important;
+                }
+
+                /* 2. Nodes: The "Card" Look */
+                .mermaid .node rect, .mermaid .node polygon, .mermaid .node circle, .mermaid .node ellipse, .mermaid .node path {
                     fill: #ffffff !important;
-                    stroke: #e2e8f0 !important; /* slate-200 */
-                    stroke-width: 2px !important;
-                    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05)) !important; 
-                    transition: all 0.2s ease;
+                    stroke: #cbd5e1 !important; /* slate-300 */
+                    stroke-width: 1.5px !important;
+                    
+                    /* Deep, rich shadow (Tailwind shadow-xl equivalent) */
+                    filter: drop-shadow(0 20px 25px -5px rgb(0 0 0 / 0.04)) drop-shadow(0 8px 10px -6px rgb(0 0 0 / 0.01)) !important;
+                    
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 }
                 
-                /* Rounded Corners for Rects */
+                /* Shape Refinements */
                 .mermaid .node rect {
-                    rx: 12px !important;
-                    ry: 12px !important;
+                    rx: 16px !important; /* More rounded */
+                    ry: 16px !important;
+                }
+                
+                /* 3. Interactive Hover Effects */
+                /* We target the group (g) hover if possible, but styling the rect on hover works best */
+                .mermaid g.node:hover rect, 
+                .mermaid g.node:hover polygon, 
+                .mermaid g.node:hover circle {
+                    stroke: #6366f1 !important; /* Indigo-500 */
+                    stroke-width: 2px !important;
+                    fill: #f8fafc !important; /* Slate-50 */
+                    /* Lift effect via filter */
+                    filter: drop-shadow(0 25px 50px -12px rgb(99 102 241 / 0.15)) !important; 
+                }
+                .mermaid g.node:hover .nodeLabel,
+                .mermaid g.node:hover text {
+                    color: #4338ca !important; /* Indigo-700 */
+                    fill: #4338ca !important;
                 }
 
-                /* Font Styling - Rendering at 15px while calculated at 20px (Lie Trick) */
-                .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
-                    font-family: Pretendard, Inter, ui-sans-serif, system-ui, sans-serif !important;
-                    font-size: 15px !important;
-                    line-height: 1.6 !important;
-                    font-weight: 600 !important;
-                    color: #1e293b !important; /* slate-800 */
-                    white-space: normal !important; /* Allow wrapping */
-                }
-
-                /* Edge Styling */
+                /* 4. Edges: Smooth & Subtle */
                 .mermaid .edgePath .path {
-                    stroke: #94a3b8 !important; /* slate-400 */
-                    stroke-width: 1.5px !important;
+                    stroke: #94a3b8 !important; /* Slate-400 */
+                    stroke-width: 2px !important;
+                    stroke-linecap: round !important;
+                    opacity: 0.8 !important;
+                    transition: all 0.3s ease !important;
+                }
+                .mermaid .edgePath .path:hover {
+                    stroke: #6366f1 !important;
+                    opacity: 1 !important;
+                    stroke-width: 3px !important;
                 }
                 .mermaid .arrowheadPath {
                     fill: #94a3b8 !important;
+                    stroke: none !important;
                 }
                 
-                /* Dark Mode Adjustments */
-                .dark .mermaid .node rect, .dark .mermaid .node circle, .dark .mermaid .node ellipse, .dark .mermaid .node polygon {
-                    fill: #1e1e20 !important;
+                /* 5. Dark Mode Logic */
+                .dark .mermaid .node rect, .dark .mermaid .node polygon, .dark .mermaid .node circle {
+                    fill: #18181b !important; /* zinc-900 */
                     stroke: #3f3f46 !important; /* zinc-700 */
+                    filter: drop-shadow(0 10px 15px -3px rgb(0 0 0 / 0.5)) !important;
                 }
-                .dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid .label, .dark .mermaid .node text {
+                .dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid text {
                     color: #e4e4e7 !important; /* zinc-200 */
+                    fill: #e4e4e7 !important;
                 }
-                .dark .mermaid .edgePath .path {
-                    stroke: #71717a !important; /* zinc-500 */
-                }
-                .dark .mermaid .arrowheadPath {
-                    fill: #71717a !important;
+                .dark .mermaid g.node:hover rect {
+                    stroke: #818cf8 !important; /* indigo-400 */
+                    fill: #27272a !important; /* zinc-800 */
+                    filter: drop-shadow(0 0 20px rgb(129 140 248 / 0.2)) !important;
                 }
             `}</style>
             <div className="relative group w-full my-8">
@@ -278,33 +309,32 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
             // Use 'base' for full customization
             theme: "base",
             securityLevel: "loose",
-            fontFamily: 'Pretendard, ui-sans-serif, system-ui, sans-serif',
+            fontFamily: 'Pretendard, Inter, ui-sans-serif, system-ui, sans-serif',
             flowchart: {
                 useMaxWidth: false,
                 htmlLabels: true,
-                curve: 'basis',
-                nodeSpacing: 60, // Give more space
-                rankSpacing: 60,
-                padding: 30, // Very generous calc padding
+                curve: 'basis', // Smooth curves are essential for premium look
+                nodeSpacing: 80, // Wide spacing for "Airy" feel
+                rankSpacing: 90,
+                padding: 40, // Massive padding for internal breathing room
             },
             themeVariables: {
-                // Calculation Font Size (Lie Trick: 20px)
-                fontSize: '20px',
+                // "The Lie Trick v3" 
+                // We tell Mermaid the font is HUGE (24px) so it creates massive boxes.
+                // CSS then shrinks text to 15px, creating luxurious padding automatically.
+                fontSize: '24px',
 
-                // Colors - Modern Slate/White Theme
+                // Base colors (Overridden by CSS, but good for fallback)
                 primaryColor: '#ffffff',
-                primaryTextColor: '#0f172a', // slate-900
-                primaryBorderColor: '#cbd5e1', // slate-300
-                lineColor: '#64748b', // slate-500
-                secondaryColor: '#f8fafc', // slate-50
+                primaryTextColor: '#0f172a',
+                primaryBorderColor: '#cbd5e1',
+                lineColor: '#94a3b8',
+                secondaryColor: '#ffffff',
                 tertiaryColor: '#ffffff',
-
-                // Backgrounds
                 mainBkg: '#ffffff',
-                nodeBorder: '#e2e8f0',
-                clusterBkg: '#f8fafc',
+                nodeBorder: '#cbd5e1',
 
-                fontFamily: 'Pretendard, ui-sans-serif, system-ui, sans-serif',
+                fontFamily: 'Pretendard, Inter, ui-sans-serif, system-ui, sans-serif',
             },
         });
     }, []);
