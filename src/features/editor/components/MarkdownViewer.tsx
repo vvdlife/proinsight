@@ -382,15 +382,15 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis', // Smooth curves are essential for premium look
-                nodeSpacing: 80, // Wide spacing for "Airy" feel
-                rankSpacing: 90,
-                padding: 40, // Massive padding for internal breathing room
+                nodeSpacing: 100, // Even wider spacing
+                rankSpacing: 100,
+                padding: 60, // Massive padding for internal breathing room
             },
             themeVariables: {
-                // "The Lie Trick v3" 
-                // We tell Mermaid the font is HUGE (24px) so it creates massive boxes.
-                // CSS then shrinks text to 15px, creating luxurious padding automatically.
-                fontSize: '24px',
+                // "The Extreme Lie Trick v4.0" 
+                // We tell Mermaid the font is GIGANTIC (48px) so it calculates enormous boxes.
+                // CSS then shrinks text to 15px, guaranteeing no clipping ever happens.
+                fontSize: '48px',
 
                 // Base colors (Overridden by CSS, but good for fallback)
                 primaryColor: '#ffffff',
