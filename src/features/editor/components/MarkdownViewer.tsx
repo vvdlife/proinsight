@@ -15,8 +15,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Info, AlertTriangle, Lightbulb, ExternalLink } from "lucide-react";
+import { Info, AlertTriangle, Lightbulb, ExternalLink, Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface MarkdownViewerProps {
     content: string;
@@ -25,47 +26,99 @@ interface MarkdownViewerProps {
 // Mermaid Component
 const Mermaid = ({ chart }: { chart: string }) => {
     const [svg, setSvg] = useState<string>("");
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (chart && ref.current) {
-            // Using a unique ID for each render to prevent conflicts
             const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
             mermaid.render(id, chart)
                 .then(({ svg }) => setSvg(svg))
                 .catch((err) => {
                     console.error("Mermaid Render Error:", err);
-                    setSvg(`<div data-error="true"></div>`); // Trigger fallback support
+                    setSvg(`<div data-error="true"></div>`);
                 });
         }
     }, [chart]);
 
+    // Prevent body scroll when fullscreen
+    useEffect(() => {
+        if (isFullscreen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [isFullscreen]);
+
     return (
-        <div className="w-full overflow-x-auto my-8 bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4">
-            {svg.startsWith("<div") ? (
-                // Error State
-                <div className="space-y-2 w-full">
-                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span>다이어그램 렌더링에 실패했습니다.</span>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
-                        {chart}
-                    </div>
+        <>
+            <div className="relative group w-full my-8">
+                <div
+                    className="w-full overflow-x-auto bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4 cursor-pointer transition-colors hover:border-primary/50"
+                    onClick={() => !svg.startsWith("<div") && setIsFullscreen(true)}
+                    title="클릭하여 크게 보기"
+                >
+                    {svg.startsWith("<div") ? (
+                        <div className="space-y-2 w-full">
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>다이어그램 렌더링에 실패했습니다.</span>
+                            </div>
+                            <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
+                                {chart}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="w-full flex justify-center min-w-min">
+                            <div
+                                ref={ref}
+                                className="mermaid-svg-container"
+                                dangerouslySetInnerHTML={{ __html: svg }}
+                            />
+                        </div>
+                    )}
                 </div>
-            ) : (
-                // Success State
-                // Use flex and justify-center on an inner wrapper to center if smaller than screen, 
-                // but allow expansion if larger.
-                <div className="w-full flex justify-center min-w-min">
+                {!svg.startsWith("<div") && (
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsFullscreen(true);
+                        }}
+                    >
+                        <Maximize2 className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+
+            {isFullscreen && (
+                <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md p-4 md:p-8 flex flex-col animate-in fade-in duration-200">
+                    <div className="flex justify-end mb-4">
+                        <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(false)}>
+                            <X className="h-6 w-6" />
+                        </Button>
+                    </div>
                     <div
-                        ref={ref}
-                        className="mermaid-svg-container"
-                        dangerouslySetInnerHTML={{ __html: svg }}
-                    />
+                        className="flex-1 overflow-auto flex justify-center items-start border rounded-xl bg-white dark:bg-zinc-900 p-8 shadow-2xl"
+                        onClick={(e) => {
+                            // Close if clicking outside the SVG area (optional, but convenient)
+                            if (e.target === e.currentTarget) setIsFullscreen(false);
+                        }}
+                    >
+                        <div
+                            className="min-w-min pointer-events-none" // prevent interacting with internal text to avoid weird selection behavior, or keep standard.
+                            dangerouslySetInnerHTML={{ __html: svg }}
+                            style={{ transform: 'scale(1)', transformOrigin: 'top center' }}
+                        />
+                    </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 
