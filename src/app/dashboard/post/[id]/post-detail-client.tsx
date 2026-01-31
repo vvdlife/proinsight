@@ -36,6 +36,8 @@ import { Progress } from "@/components/ui/progress";
 import { useReactToPrint } from "react-to-print";
 import { SeoAnalysisPanel } from "@/features/post/components/SeoAnalysisPanel";
 import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDashboard";
+import { ReadingProgressBar } from "@/features/post/components/ReadingProgressBar";
+import { TableOfContents } from "@/features/post/components/TableOfContents";
 
 
 // Dynamic import for MDXEditor to avoid SSR issues
