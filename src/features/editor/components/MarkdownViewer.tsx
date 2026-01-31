@@ -80,25 +80,23 @@ const Blockquote = ({ children }: any) => {
             const firstGrandChild = grandChildren[0];
 
             if (typeof firstGrandChild === 'string') {
-                const match = firstGrandChild.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)/i);
+                // Regex to match [!TIP] or "[!TIP]" or '[!TIP]'
+                const match = firstGrandChild.match(/^['"]?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]['"]?\s*(.*)/i);
                 if (match) {
                     const type = match[1].toLowerCase() as any;
-                    const title = match[2];
-                    // Remove the marker from the first element
-                    const newFirstGrandChild = firstGrandChild.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '');
+                    let title = match[2];
 
-                    // Reconstruct content without the marker
-                    const newContent = [
-                        // If there is title text remaining on the first line, keep it (bolded perhaps) or just part of content?
-                        // Usually GitHub puts the type as title. The user seems to use "![TIP] Title: Content" format.
-                        // Let's handle the user's specific format: "![TIP] Analyst Note: ..."
-                        // Actually the user's screenshot text is: "[!TIP] Analyst Note: AI를..."
-                        // The regex `^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]` matches the start.
+                    // Cleanup title if it starts with "Analyst Note:" or similar common patterns if needed, 
+                    // or just cleanup quotes at the end if the start had quotes.
+                    // For now, just taking the rest of the line.
+                    // Also remove potential closing quote if it was at the start
+                    title = title.replace(/['"]$/, '');
 
-                        // Let's return the rest of the text as content.
-                        ...grandChildren
-                    ];
-                    // Replace the first string node
+                    // Remove the marker from the text
+                    const newFirstGrandChild = firstGrandChild.replace(/^['"]?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]['"]?\s*/i, '');
+
+                    // Reconstruct content
+                    const newContent = [...grandChildren];
                     newContent[0] = newFirstGrandChild;
 
                     return {
@@ -153,23 +151,48 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            theme: "neutral", // Changed to neutral for cleaner look
+            // Use 'base' theme with custom variables if 'neutral' is still too dark, 
+            // but 'neutral' should work. Let's force light background variable just in case.
+            theme: "neutral",
             securityLevel: "loose",
             fontFamily: 'inherit',
         });
     }, []);
 
+    // Function to strip SEO scripts and comments for display
+    const getDisplayContent = (rawContent: string) => {
+        return rawContent
+            .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
+            .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '') // Remove script tags
+            .replace(/^---[\s\S]*?---\n/, ''); // Remove frontmatter if valid
+    };
+
+    const displayContent = getDisplayContent(content);
+
     return (
         <div className="prose prose-stone dark:prose-invert max-w-none w-full px-4 py-2 text-foreground 
-            prose-headings:scroll-mt-20 prose-headings:font-bold prose-headings:tracking-tight
-            prose-h1:text-3xl prose-h1:mb-8
-            prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:border-b prose-h2:pb-2
-            prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
-            prose-p:leading-8 prose-p:mb-6 prose-p:text-[1.05rem]
-            prose-li:leading-7 prose-li:my-2
-            prose-strong:text-primary/90 prose-strong:font-bold
+            /* Headings */
+            prose-headings:scroll-mt-20 prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground
+            prose-h1:text-4xl prose-h1:font-extrabold prose-h1:mb-10 prose-h1:leading-tight
+            prose-h2:text-3xl prose-h2:mt-16 prose-h2:mb-6 prose-h2:border-b prose-h2:pb-3 prose-h2:leading-snug
+            prose-h3:text-2xl prose-h3:mt-12 prose-h3:mb-4 prose-h3:leading-snug
+            prose-h4:text-xl prose-h4:mt-8 prose-h4:mb-4 prose-h4:font-semibold
+            
+            /* Text body */
+            prose-p:leading-8 prose-p:mb-6 prose-p:text-[1.05rem] prose-p:text-foreground/90
+            prose-li:leading-7 prose-li:my-2 prose-li:text-foreground/90
+            
+            /* Decorators */
+            prose-strong:text-primary prose-strong:font-bold
+            prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-a:font-medium
+            
+            /* Blockquote (Reset default) */
             prose-blockquote:not-italic prose-blockquote:border-none prose-blockquote:bg-transparent prose-blockquote:p-0 prose-blockquote:my-0
+            
+            /* Code */
             prose-code:before:content-none prose-code:after:content-none
+            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono prose-code:text-sm
+            prose-pre:bg-muted/50 prose-pre:border prose-pre:text-foreground
         ">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -254,7 +277,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                     }
                 }}
             >
-                {content}
+                {displayContent}
             </ReactMarkdown>
         </div>
     );
