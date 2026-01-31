@@ -1,11 +1,12 @@
+```
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import mermaid from "mermaid";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useState, useEffect, useRef, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import mermaid from 'mermaid';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Kept original theme
 import {
     Table,
     TableBody,
@@ -15,33 +16,37 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Info, AlertTriangle, Lightbulb, ExternalLink, Maximize2, X } from "lucide-react";
+import { Info, AlertTriangle, Lightbulb, ExternalLink, Maximize2, X, Download, Copy, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { toPng } from 'html-to-image';
+import { toast } from "sonner"; // Assuming sonner is used, or alert.
 
 interface MarkdownViewerProps {
     content: string;
 }
 
-// Mermaid Component
 const Mermaid = ({ chart }: { chart: string }) => {
     const [svg, setSvg] = useState<string>("");
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<HTMLDivElement>(null);
+    const uniqueId = useMemo(() => `mermaid - ${ Math.random().toString(36).substr(2, 9) } `, []);
 
     useEffect(() => {
-        if (chart && ref.current) {
-            const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-            mermaid.render(id, chart)
-                .then(({ svg }) => setSvg(svg))
-                .catch((err) => {
-                    console.error("Mermaid Render Error:", err);
-                    setSvg(`<div data-error="true"></div>`);
-                });
-        }
-    }, [chart]);
+        const renderChart = async () => {
+            try {
+                // Determine theme based on system preference or default to base
+                const { svg } = await mermaid.render(uniqueId, chart);
+                setSvg(svg);
+            } catch (error) {
+                console.error("Mermaid rendering failed:", error);
+                setSvg(`< div class="text-red-500 p-4 border border-red-200 rounded" > Failed to render diagram</div > `);
+            }
+        };
+        renderChart();
+    }, [chart, uniqueId]);
 
-    // Prevent body scroll and handle ESC key when fullscreen
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (isFullscreen && e.key === "Escape") {
@@ -62,122 +67,140 @@ const Mermaid = ({ chart }: { chart: string }) => {
         };
     }, [isFullscreen]);
 
+    const handleDownload = async () => {
+        if (chartRef.current) {
+            try {
+                // Create a clone to render with specific styles if needed, 
+                // but direct capture usually works. 
+                // We capture the SVG container.
+                const dataUrl = await toPng(chartRef.current, { 
+                    backgroundColor: '#ffffff',
+                    quality: 1.0,
+                    pixelRatio: 2 // High res
+                });
+                const link = document.createElement('a');
+                link.download = 'proinsight-chart.png';
+                link.href = dataUrl;
+                link.click();
+                toast.success("이미지로 저장되었습니다.");
+            } catch (err) {
+                console.error("Download failed", err);
+                toast.error("이미지 저장에 실패했습니다.");
+            }
+        }
+    };
+
+    const handleCopySource = () => {
+        navigator.clipboard.writeText(chart);
+        toast.success("Mermaid 코드가 복사되었습니다.");
+    };
+
     return (
         <>
             {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
             <style>{`
-                /* 1. Reset & Typography */
-                .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
-                    font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
-                    font-weight: 600 !important;
-                    font-size: 15px !important; /* Render size */
-                    line-height: 1.5 !important;
-                    letter-spacing: -0.01em !important;
-                    color: #1e293b !important; /* slate-800 */
-                    fill: #1e293b !important;
-                }
+    /* 1. Reset & Typography */
+    .mermaid.nodeLabel, .mermaid.edgeLabel, .mermaid.label, .mermaid.node text {
+    font - family: 'Pretendard', 'Inter', -apple - system, BlinkMacSystemFont, system - ui, sans - serif!important;
+    font - weight: 600!important;
+    font - size: 15px!important; /* Render size */
+    line - height: 1.5!important;
+    letter - spacing: -0.01em!important;
+    color: #1e293b!important; /* slate-800 */
+    fill: #1e293b!important;
+}
 
                 /* 2. Nodes: The "Card" Look */
-                .mermaid .node rect, .mermaid .node polygon, .mermaid .node circle, .mermaid .node ellipse, .mermaid .node path {
-                    fill: #ffffff !important;
-                    stroke: #cbd5e1 !important; /* slate-300 */
-                    stroke-width: 1.5px !important;
-                    
-                    /* Deep, rich shadow (Tailwind shadow-xl equivalent) */
-                    filter: drop-shadow(0 20px 25px -5px rgb(0 0 0 / 0.04)) drop-shadow(0 8px 10px -6px rgb(0 0 0 / 0.01)) !important;
-                    
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                }
-                
+                .mermaid.node rect, .mermaid.node polygon, .mermaid.node circle, .mermaid.node ellipse, .mermaid.node path {
+    fill: #ffffff!important;
+    stroke: #cbd5e1!important; /* slate-300 */
+    stroke - width: 1.5px!important;
+
+    /* Deep, rich shadow (Tailwind shadow-xl equivalent) */
+    filter: drop - shadow(0 20px 25px - 5px rgb(0 0 0 / 0.04)) drop - shadow(0 8px 10px - 6px rgb(0 0 0 / 0.01))!important;
+
+    transition: all 0.3s cubic - bezier(0.4, 0, 0.2, 1)!important;
+}
+
                 /* Shape Refinements */
-                .mermaid .node rect {
-                    rx: 16px !important; /* More rounded */
-                    ry: 16px !important;
-                }
-                
+                .mermaid.node rect {
+    rx: 16px!important; /* More rounded */
+    ry: 16px!important;
+}
+
                 /* 3. Interactive Hover Effects */
                 /* We target the group (g) hover if possible, but styling the rect on hover works best */
                 .mermaid g.node:hover rect, 
                 .mermaid g.node:hover polygon, 
                 .mermaid g.node:hover circle {
-                    stroke: #6366f1 !important; /* Indigo-500 */
-                    stroke-width: 2px !important;
-                    fill: #f8fafc !important; /* Slate-50 */
-                    /* Lift effect via filter */
-                    filter: drop-shadow(0 25px 50px -12px rgb(99 102 241 / 0.15)) !important; 
-                }
-                .mermaid g.node:hover .nodeLabel,
+    stroke: #6366f1!important; /* Indigo-500 */
+    stroke - width: 2px!important;
+    fill: #f8fafc!important; /* Slate-50 */
+    /* Lift effect via filter */
+    filter: drop - shadow(0 25px 50px - 12px rgb(99 102 241 / 0.15))!important;
+}
+                .mermaid g.node: hover.nodeLabel,
                 .mermaid g.node:hover text {
-                    color: #4338ca !important; /* Indigo-700 */
-                    fill: #4338ca !important;
-                }
+    color: #4338ca!important; /* Indigo-700 */
+    fill: #4338ca!important;
+}
 
                 /* 4. Edges: Smooth & Subtle */
-                .mermaid .edgePath .path {
-                    stroke: #94a3b8 !important; /* Slate-400 */
-                    stroke-width: 2px !important;
-                    stroke-linecap: round !important;
-                    opacity: 0.8 !important;
-                    transition: all 0.3s ease !important;
-                }
-                .mermaid .edgePath .path:hover {
-                    stroke: #6366f1 !important;
-                    opacity: 1 !important;
-                    stroke-width: 3px !important;
-                }
-                .mermaid .arrowheadPath {
-                    fill: #94a3b8 !important;
-                    stroke: none !important;
-                }
-                
+                .mermaid.edgePath.path {
+    stroke: #94a3b8!important; /* Slate-400 */
+    stroke - width: 2px!important;
+    stroke - linecap: round!important;
+    opacity: 0.8!important;
+    transition: all 0.3s ease!important;
+}
+                .mermaid.edgePath.path:hover {
+    stroke: #6366f1!important;
+    opacity: 1!important;
+    stroke - width: 3px!important;
+}
+                .mermaid.arrowheadPath {
+    fill: #94a3b8!important;
+    stroke: none!important;
+}
+
                 /* 5. Dark Mode Logic */
-                .dark .mermaid .node rect, .dark .mermaid .node polygon, .dark .mermaid .node circle {
-                    fill: #18181b !important; /* zinc-900 */
-                    stroke: #3f3f46 !important; /* zinc-700 */
-                    filter: drop-shadow(0 10px 15px -3px rgb(0 0 0 / 0.5)) !important;
-                }
-                .dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid text {
-                    color: #e4e4e7 !important; /* zinc-200 */
-                    fill: #e4e4e7 !important;
-                }
-                .dark .mermaid g.node:hover rect {
-                    stroke: #818cf8 !important; /* indigo-400 */
-                    fill: #27272a !important; /* zinc-800 */
-                    filter: drop-shadow(0 0 20px rgb(129 140 248 / 0.2)) !important;
-                }
-            `}</style>
-            <div className="relative group w-full my-8">
-                <div
-                    className="w-full overflow-x-auto bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4 cursor-pointer transition-colors hover:border-primary/50"
-                    onClick={() => !svg.startsWith("<div") && setIsFullscreen(true)}
-                    title="클릭하여 크게 보기"
-                >
-                    {svg.startsWith("<div") ? (
-                        <div className="space-y-2 w-full">
-                            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span>다이어그램 렌더링에 실패했습니다.</span>
-                            </div>
-                            <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
-                                {chart}
-                            </div>
+                .dark.mermaid.node rect, .dark.mermaid.node polygon, .dark.mermaid.node circle {
+    fill: #18181b!important; /* zinc-900 */
+    stroke: #3f3f46!important; /* zinc-700 */
+    filter: drop - shadow(0 10px 15px - 3px rgb(0 0 0 / 0.5))!important;
+}
+                .dark.mermaid.nodeLabel, .dark.mermaid.edgeLabel, .dark.mermaid text {
+    color: #e4e4e7!important; /* zinc-200 */
+    fill: #e4e4e7!important;
+}
+                .dark.mermaid g.node:hover rect {
+    stroke: #818cf8!important; /* indigo-400 */
+    fill: #27272a!important; /* zinc-800 */
+    filter: drop - shadow(0 0 20px rgb(129 140 248 / 0.2))!important;
+}
+`}</style>
+            
+            {/* Inline View */}
+            <div className="relative group w-full my-8 bg-white/50 dark:bg-zinc-900/50 rounded-xl border border-slate-200 dark:border-zinc-800 p-2 overflow-hidden hover:border-indigo-400 transition-colors duration-300">
+                {svg.startsWith("<div") ? (
+                    <div className="space-y-2 w-full">
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span>다이어그램 렌더링에 실패했습니다.</span>
                         </div>
-                    ) : (
-                        <div className="w-full flex justify-center min-w-min">
-                            <div
-                                ref={ref}
-                                className="mermaid-svg-container"
-                                dangerouslySetInnerHTML={{ __html: svg }}
-                            />
+                        <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
+                            {chart}
                         </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div 
+                        className="overflow-x-auto p-4 flex justify-center min-h-[150px] items-center cursor-zoom-in"
+                        onClick={() => setIsFullscreen(true)}
+                        dangerouslySetInnerHTML={{ __html: svg }}
+                    />
+                )}
+                
                 {!svg.startsWith("<div") && (
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
-                        onClick={(e) => {
                             e.stopPropagation();
                             setIsFullscreen(true);
                         }}
@@ -382,11 +405,11 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                     h1: ({ children }) => <h1 id={slugify(String(children))}>{children}</h1>,
                     h2: ({ children }) => <h2 id={slugify(String(children))} className="group flex items-center gap-2">
                         {children}
-                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">#</a>
+                        <a href={`#${ slugify(String(children)) } `} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary">#</a>
                     </h2>,
                     h3: ({ children }) => <h3 id={slugify(String(children))} className="group flex items-center gap-2">
                         {children}
-                        <a href={`#${slugify(String(children))}`} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary text-sm">#</a>
+                        <a href={`#${ slugify(String(children)) } `} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary text-sm">#</a>
                     </h3>,
 
                     // 1. Table -> Shadcn Table
