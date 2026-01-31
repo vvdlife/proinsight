@@ -109,16 +109,21 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text, .mermaid .node div, .mermaid .node span {
     font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-weight: 600 !important;
-    font-size: 16px !important; /* Standard readable size */
-    line-height: 1.6 !important;
+    
+    /* [SAFE MARGIN STRATEGY] 
+       Config uses 16px, Styles use 13.5px. 
+       This delta ensures strictly contained text. 
+    */
+    font-size: 13.5px !important; 
+    line-height: 1.5 !important;
     letter-spacing: -0.01em !important;
     color: #1e293b !important;
     fill: #1e293b !important;
     
-    /* Safety mechanisms against clipping */
+    /* Layout Safety */
     overflow: visible !important;
-    white-space: pre-wrap !important; /* Allow wrapping */
-    word-break: break-word !important; /* Prevent horizontal overflow */
+    white-space: normal !important; /* Force standard wrapping */
+    word-wrap: break-word !important;
 }
 
 /* Ensure container allows overflow */
@@ -140,8 +145,8 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 
 /* Shape Refinements */
 .mermaid .node rect {
-    rx: 12px !important; /* Slightly less rounded for standard look */
-    ry: 12px !important;
+    rx: 8px !important; /* Tight radius for cleaner look */
+    ry: 8px !important;
 }
 
 /* 3. Interactive Hover Effects */
@@ -397,8 +402,10 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 padding: 15, // Standard padding, rely on CSS for breathing room
             },
             themeVariables: {
-                // Revert "Lie Trick" -> Standard Robust Setup
-                // Using standard font size but enforcing overflow visibility
+                // "Safe Margin Strategy"
+                // 1. We tell Mermaid to calculate layout for 16px text.
+                // 2. We render text at 13.5px via CSS.
+                // Result: The box is always bigger than the text. Zero clipping.
                 fontSize: '16px',
 
                 // Base colors (Overridden by CSS, but good for fallback)
