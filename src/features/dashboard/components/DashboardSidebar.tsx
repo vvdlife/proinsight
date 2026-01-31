@@ -44,13 +44,12 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
         <div className={cn("pb-12 h-screen border-r border-[#333] bg-[#121212] text-zinc-300", className)}>
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
-                    <Link href="/" className="mb-8 flex justify-center px-4">
-                        <div className="relative h-9 w-full max-w-[100px]">
+                    <Link href="/" className="mb-6 flex justify-center px-4">
+                        <div className="relative h-8 w-8">
                             <Image
                                 src="/logo.png"
                                 alt="ProInsight Logo"
-                                width={150}
-                                height={150}
+                                fill
                                 className="object-contain"
                                 priority
                             />
