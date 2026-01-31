@@ -215,18 +215,24 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
+            // 'neutral' theme is best for clarity
             theme: "neutral",
             securityLevel: "loose",
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
             flowchart: {
-                useMaxWidth: false, // Prevents auto-scaling to container width (allows scrolling)
+                useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis',
+                // Increase padding to prevent clipping?
+                nodeSpacing: 50,
+                rankSpacing: 50,
+                padding: 15, // Try to add generous padding defaults
             },
             themeVariables: {
-                fontSize: '15px', // Slightly smaller than 16px to prevent clipping in boxes
+                fontSize: '16px',
                 primaryColor: '#e0e0e0',
                 lineColor: '#666',
+                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
             },
         });
     }, []);
