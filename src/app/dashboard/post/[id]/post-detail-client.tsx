@@ -367,6 +367,7 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
             )}
         </div>
     </div>
+    {/* End of PostDetailClient Layout */ }
     </div >
     );
 }
