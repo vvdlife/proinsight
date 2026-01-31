@@ -367,5 +367,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
             )}
         </div>
     </div>
+    </div >
     );
 }
