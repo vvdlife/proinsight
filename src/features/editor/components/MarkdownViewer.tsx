@@ -34,20 +34,45 @@ const Mermaid = ({ chart }: { chart: string }) => {
 
     useEffect(() => {
         const renderChart = async () => {
+            if (!chart) return;
+
             try {
-                // Smart Style Injection: Automatically add semantic classes
+                // Smart Style Injection
                 const semanticStyles = `
 classDef ai fill:#eff6ff,stroke:#60a5fa,stroke-width:2px,color:#1e293b;
 classDef human fill:#fdf4ff,stroke:#e879f9,stroke-width:2px,color:#1e293b;
 classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 `.trim();
 
-                // Append styles to the chart content
                 const enhancedChart = `${chart}\n${semanticStyles}`;
 
-                // Determine theme based on system preference or default to base
+                // Render via Mermaid
                 const { svg } = await mermaid.render(uniqueId, enhancedChart);
-                setSvg(svg);
+
+                // [CRITICAL FIX] Post-Process SVG to FORCE styling overrides
+                const widthFix = `
+                    <style>
+                        #${uniqueId} .nodeLabel, #${uniqueId} .edgeLabel, #${uniqueId} .label, #${uniqueId} .node text, #${uniqueId} .node div, #${uniqueId} .node span, #${uniqueId} .node p {
+                            font-family: 'Pretendard', sans-serif !important;
+                            font-size: 14px !important; /* Slightly smaller than 16px config for safety */
+                            line-height: 1.5 !important;
+                            white-space: normal !important;
+                            word-wrap: break-word !important;
+                            word-break: break-word !important;
+                        }
+                        #${uniqueId} .node foreignObject {
+                            overflow: visible !important;
+                            height: auto !important;
+                        }
+                    </style>
+                `;
+
+                // Allow "max-width" to be overridden by removing strict inline widths if present
+                const cleanedSvg = svg
+                    .replace(/max-width:\s*\d+px/g, 'max-width: none') // Remove max-width constraint
+                    .replace(/<style>/, widthFix + '<style>'); // Inject our robust styles
+
+                setSvg(cleanedSvg);
             } catch (error) {
                 console.error("Mermaid rendering failed:", error);
                 setSvg(`<div class="text-red-500 p-4 border border-red-200 rounded bg-red-50">Failed to render diagram</div>`);
@@ -399,26 +424,19 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            // Use 'base' for full customization
             theme: "base",
             securityLevel: "loose",
             fontFamily: 'Pretendard, Inter, ui-sans-serif, system-ui, sans-serif',
             flowchart: {
                 useMaxWidth: false,
                 htmlLabels: true,
-                curve: 'basis', // Smooth curves are essential for premium look
+                curve: 'basis',
                 nodeSpacing: 50,
                 rankSpacing: 50,
-                padding: 40, // Increased padding
+                padding: 15, // Standard padding
             },
             themeVariables: {
-                // "Nuclear Margin Strategy"
-                // 1. Calculate layout for 20px (Huge Box)
-                // 2. Render text at 12px (Small Text)
-                // Result: Massive 8px safety delta + Padding 40 = Impossible to clip.
-                fontSize: '20px',
-
-                // Base colors (Overridden by CSS, but good for fallback)
+                fontSize: '16px', // Standard calculation
                 primaryColor: '#ffffff',
                 primaryTextColor: '#0f172a',
                 primaryBorderColor: '#cbd5e1',
@@ -427,11 +445,12 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 tertiaryColor: '#ffffff',
                 mainBkg: '#ffffff',
                 nodeBorder: '#cbd5e1',
-
                 fontFamily: 'Pretendard, Inter, ui-sans-serif, system-ui, sans-serif',
             },
         });
     }, []);
+
+
 
     // Function to strip SEO scripts and comments for display
     const getDisplayContent = (rawContent: string) => {
