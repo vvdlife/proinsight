@@ -106,7 +106,7 @@ const Blockquote = ({ children }: any) => {
                         title: title || type.toUpperCase(),
                         content: (
                             <div className="text-sm [&>p]:mb-0">
-                                {React.createElement('p', firstChild.props, ...newContent)}
+                                {React.createElement('p', element.props, ...newContent)}
                                 {childrenArray.slice(1)}
                             </div>
                         )
