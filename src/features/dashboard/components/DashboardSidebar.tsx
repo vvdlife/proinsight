@@ -41,16 +41,16 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
     ];
 
     return (
-        <div className={cn("pb-12 h-screen border-r bg-background", className)}>
+        <div className={cn("pb-12 h-screen border-r border-[#333] bg-[#121212] text-zinc-300", className)}>
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
-                    <Link href="/" className="mb-6 flex items-center px-4 pl-6">
-                        <div className="relative h-10 w-full max-w-[150px]">
+                    <Link href="/" className="mb-8 flex justify-center px-4">
+                        <div className="relative h-20 w-full max-w-[150px]">
                             <Image
                                 src="/logo.png"
                                 alt="ProInsight Logo"
                                 width={150}
-                                height={40}
+                                height={150}
                                 className="object-contain"
                                 priority
                             />
@@ -60,8 +60,11 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
                         {routes.map((route) => (
                             <Button
                                 key={route.href}
-                                variant={route.active ? "secondary" : "ghost"}
-                                className="w-full justify-start"
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start hover:bg-zinc-800 hover:text-white mb-1",
+                                    route.active ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400" : "text-zinc-400"
+                                )}
                                 asChild
                             >
                                 <Link href={route.href}>
