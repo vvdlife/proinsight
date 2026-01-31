@@ -24,7 +24,7 @@ export async function saveApiKey(apiKey: string): Promise<SaveApiKeyResult> {
             create: { userId, apiKey },
         });
 
-        revalidatePath("/dashboard/settings");
+        revalidatePath("/", "layout");
         return { success: true, message: "API Key가 안전하게 저장되었습니다." };
     } catch (error) {
         console.error("Save API Key Error:", error);
