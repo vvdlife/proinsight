@@ -23,6 +23,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
     Sheet,
@@ -179,195 +180,200 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
         }
     };
 
-    <TableOfContents content={content} />
+    return (
+        <div className="flex flex-col gap-6 p-4 md:p-8 max-w-4xl mx-auto relative">
+            {/* 1. Reading Progress Bar (Fixed at top) */}
+            <ReadingProgressBar />
 
-    {/* Print Area Wrapper */ }
-    <div ref={printRef} className="flex flex-col gap-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between print:hidden">
-                <Button asChild variant="ghost" className="w-fit pl-0 hover:bg-transparent">
-                    <Link href="/dashboard" className="flex items-center text-muted-foreground hover:text-foreground">
-                        <ChevronLeft className="mr-2 h-4 w-4" />
-                        목록으로 돌아가기
-                    </Link>
-                </Button>
+            {/* 2. Table of Contents (Floating on Desktop) */}
+            <TableOfContents content={content} />
 
-                <div className="flex items-center space-x-2">
-                    {/* Download Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon">
-                                <Download className="h-4 w-4" />
+            {/* Print Area Wrapper */}
+            <div ref={printRef} className="flex flex-col gap-6">
+                {/* Header */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between print:hidden">
+                        <Button asChild variant="ghost" className="w-fit pl-0 hover:bg-transparent">
+                            <Link href="/dashboard" className="flex items-center text-muted-foreground hover:text-foreground">
+                                <ChevronLeft className="mr-2 h-4 w-4" />
+                                목록으로 돌아가기
+                            </Link>
+                        </Button>
+
+                        <div className="flex items-center space-x-2">
+                            {/* Download Menu */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <Download className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={handleDownloadMarkdown}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Markdown 다운로드
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handlePrint}>
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        PDF로 저장 (인쇄)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Smart Copy */}
+                            <Button variant="outline" size="sm" onClick={handleSmartCopy} className="gap-2 hidden sm:flex">
+                                <Copy className="h-4 w-4" />
+                                스마트 복사
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleDownloadMarkdown}>
-                                <FileText className="mr-2 h-4 w-4" />
-                                Markdown 다운로드
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handlePrint}>
-                                <Printer className="mr-2 h-4 w-4" />
-                                PDF로 저장 (인쇄)
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
 
-                    {/* Smart Copy */}
-                    <Button variant="outline" size="sm" onClick={handleSmartCopy} className="gap-2 hidden sm:flex">
-                        <Copy className="h-4 w-4" />
-                        스마트 복사
-                    </Button>
+                            {/* WordPress Publish */}
+                            <WordPressDialog post={{ ...initialPost, content }} />
 
-                    {/* WordPress Publish */}
-                    <WordPressDialog post={{ ...initialPost, content }} />
+                            {/* Social Media Share */}
+                            <Sheet modal={false}>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline" size="icon" title="소셜 미디어 홍보">
+                                        <Share2 className="h-4 w-4" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent className="overflow-y-auto min-w-[400px]">
+                                    <SheetHeader>
+                                        <SheetTitle>소셜 미디어 홍보</SheetTitle>
+                                        <SheetDescription>
+                                            블로그 글을 바탕으로 인스타그램, 트위터, 링크드인에 올릴 홍보 콘텐츠를 생성합니다.
+                                        </SheetDescription>
+                                    </SheetHeader>
+                                    <SocialMediaDashboard
+                                        postId={initialPost.id}
+                                        postContent={content}
+                                        existingPosts={initialPost.socialPosts || []}
+                                    />
+                                </SheetContent>
+                            </Sheet>
 
-                    {/* Social Media Share */}
-                    <Sheet modal={false}>
-                        <SheetTrigger asChild>
-                            <Button variant="outline" size="icon" title="소셜 미디어 홍보">
-                                <Share2 className="h-4 w-4" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="overflow-y-auto min-w-[400px]">
-                            <SheetHeader>
-                                <SheetTitle>소셜 미디어 홍보</SheetTitle>
-                                <SheetDescription>
-                                    블로그 글을 바탕으로 인스타그램, 트위터, 링크드인에 올릴 홍보 콘텐츠를 생성합니다.
-                                </SheetDescription>
-                            </SheetHeader>
-                            <SocialMediaDashboard
-                                postId={initialPost.id}
-                                postContent={content}
-                                existingPosts={initialPost.socialPosts || []}
-                            />
-                        </SheetContent>
-                    </Sheet>
+                            {/* SEO Analyzer */}
+                            <Sheet modal={false}>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline" size="icon" title="SEO 분석">
+                                        <Search className="h-4 w-4" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent className="overflow-y-auto min-w-[400px]">
+                                    <SheetHeader>
+                                        <SheetTitle>SEO 분석 & 최적화</SheetTitle>
+                                        <SheetDescription>
+                                            AI가 콘텐츠를 분석하여 검색 엔진 최적화 점수와 개선 제안을 제공합니다.
+                                        </SheetDescription>
+                                    </SheetHeader>
 
-                    {/* SEO Analyzer */}
-                    <Sheet modal={false}>
-                        <SheetTrigger asChild>
-                            <Button variant="outline" size="icon" title="SEO 분석">
-                                <Search className="h-4 w-4" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent className="overflow-y-auto min-w-[400px]">
-                            <SheetHeader>
-                                <SheetTitle>SEO 분석 & 최적화</SheetTitle>
-                                <SheetDescription>
-                                    AI가 콘텐츠를 분석하여 검색 엔진 최적화 점수와 개선 제안을 제공합니다.
-                                </SheetDescription>
-                            </SheetHeader>
-
-                            <SeoAnalysisPanel
-                                seoResult={seoResult}
-                                isAnalyzing={isAnalyzing}
-                                isOptimizing={isOptimizing}
-                                onAnalyze={handleAnalyzeSEO}
-                                onOptimize={handleOptimize}
-                            />
-                        </SheetContent>
-                    </Sheet>
+                                    <SeoAnalysisPanel
+                                        seoResult={seoResult}
+                                        isAnalyzing={isAnalyzing}
+                                        isOptimizing={isOptimizing}
+                                        onAnalyze={handleAnalyzeSEO}
+                                        onOptimize={handleOptimize}
+                                    />
+                                </SheetContent>
+                            </Sheet>
 
 
-                    {isEditing ? (
-                        <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-right-5">
-                            {prevContent && (
-                                <Button variant="destructive" size="sm" onClick={handleRevert} disabled={isPending} title="최적화 전으로 복구">
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    복구
-                                </Button>
+                            {isEditing ? (
+                                <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-right-5">
+                                    {prevContent && (
+                                        <Button variant="destructive" size="sm" onClick={handleRevert} disabled={isPending} title="최적화 전으로 복구">
+                                            <RotateCcw className="mr-2 h-4 w-4" />
+                                            복구
+                                        </Button>
+                                    )}
+                                    <Button variant="ghost" onClick={handleCancel} disabled={isPending}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        취소
+                                    </Button>
+                                    <Button onClick={handleSave} disabled={isPending}>
+                                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        저장
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center space-x-2 bg-muted/30 p-1.5 rounded-lg border">
+                                    <Label htmlFor="edit-mode" className="text-xs font-medium cursor-pointer px-2">읽기</Label>
+                                    <Switch
+                                        id="edit-mode"
+                                        checked={isEditing}
+                                        onCheckedChange={setIsEditing}
+                                    />
+                                    <Label htmlFor="edit-mode" className="text-xs font-medium cursor-pointer px-2">수정</Label>
+                                </div>
                             )}
-                            <Button variant="ghost" onClick={handleCancel} disabled={isPending}>
-                                <X className="mr-2 h-4 w-4" />
-                                취소
-                            </Button>
-                            <Button onClick={handleSave} disabled={isPending}>
-                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                저장
-                            </Button>
                         </div>
+                    </div>
+
+                    <div className="flex flex-col gap-6">
+                        {initialPost.coverImage && (
+                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted group print:hidden">
+                                <Image
+                                    src={initialPost.coverImage}
+                                    alt={`Cover image for ${initialPost.topic}`}
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button variant="secondary" onClick={handleDownloadImage} className="gap-2">
+                                        <Download className="h-4 w-4" />
+                                        이미지 다운로드
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Print Only Cover Image */}
+                        {initialPost.coverImage && (
+                            <div className="hidden print:block w-full mb-8">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={initialPost.coverImage} alt="Cover" className="w-full h-auto max-h-[400px] object-cover rounded-lg" />
+                            </div>
+                        )}
+
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2">
+                                <h1 className="text-3xl font-bold tracking-tight">{initialPost.topic}</h1>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Badge variant="secondary" className="capitalize">
+                                        {initialPost.tone}
+                                    </Badge>
+                                    <span>•</span>
+                                    <span>
+                                        {initialPost.createdAt.toLocaleDateString("ko-KR", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </span>
+                                </div>
+                            </div>
+                            {!isEditing && <div className="print:hidden"><CopyButton content={content} /></div>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div className={isEditing ? "" : "bg-card rounded-lg border p-6 md:p-10 shadow-sm min-h-[500px]"}>
+                    {isEditing ? (
+                        <MarkdownEditor
+                            markdown={content}
+                            onChange={setContent}
+                            className="min-h-[600px] shadow-sm"
+                        />
                     ) : (
-                        <div className="flex items-center space-x-2 bg-muted/30 p-1.5 rounded-lg border">
-                            <Label htmlFor="edit-mode" className="text-xs font-medium cursor-pointer px-2">읽기</Label>
-                            <Switch
-                                id="edit-mode"
-                                checked={isEditing}
-                                onCheckedChange={setIsEditing}
-                            />
-                            <Label htmlFor="edit-mode" className="text-xs font-medium cursor-pointer px-2">수정</Label>
+                        <div className="print:p-0">
+                            <MarkdownViewer content={content} />
                         </div>
                     )}
                 </div>
             </div>
-
-            <div className="flex flex-col gap-6">
-                {initialPost.coverImage && (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted group print:hidden">
-                        <Image
-                            src={initialPost.coverImage}
-                            alt={`Cover image for ${initialPost.topic}`}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button variant="secondary" onClick={handleDownloadImage} className="gap-2">
-                                <Download className="h-4 w-4" />
-                                이미지 다운로드
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Print Only Cover Image */}
-                {initialPost.coverImage && (
-                    <div className="hidden print:block w-full mb-8">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={initialPost.coverImage} alt="Cover" className="w-full h-auto max-h-[400px] object-cover rounded-lg" />
-                    </div>
-                )}
-
-                <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                        <h1 className="text-3xl font-bold tracking-tight">{initialPost.topic}</h1>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Badge variant="secondary" className="capitalize">
-                                {initialPost.tone}
-                            </Badge>
-                            <span>•</span>
-                            <span>
-                                {initialPost.createdAt.toLocaleDateString("ko-KR", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
-                            </span>
-                        </div>
-                    </div>
-                    {!isEditing && <div className="print:hidden"><CopyButton content={content} /></div>}
-                </div>
-            </div>
         </div>
-
-        {/* Content Area */}
-        <div className={isEditing ? "" : "bg-card rounded-lg border p-6 md:p-10 shadow-sm min-h-[500px]"}>
-            {isEditing ? (
-                <MarkdownEditor
-                    markdown={content}
-                    onChange={setContent}
-                    className="min-h-[600px] shadow-sm"
-                />
-            ) : (
-                <div className="print:p-0">
-                    <MarkdownViewer content={content} />
-                </div>
-            )}
-        </div>
-    </div>
-    {/* End of PostDetailClient Layout */ }
-    </div >
     );
 }
