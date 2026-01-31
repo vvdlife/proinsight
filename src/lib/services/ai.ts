@@ -361,3 +361,80 @@ export async function recommendTopics(searchContext: string | undefined, categor
         return [];
     }
 }
+
+export interface SocialContentResult {
+    platform: 'instagram' | 'twitter' | 'linkedin';
+    content: string;
+    hashtags: string[];
+}
+
+export async function generateSocialContent(
+    postContent: string, 
+    platform: 'instagram' | 'twitter' | 'linkedin', 
+    apiKey: string
+): Promise<SocialContentResult> {
+    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.7, "application/json");
+
+    let promptInfo = "";
+    if (platform === 'instagram') {
+        promptInfo = `
+        - Platform: Instagram
+        - Style: Emotional, engaging, visual storytelling tone.
+        - Features: Use emojis liberally. Focus on "vibes" and key takeaways.
+        - Hashtags: Generate 10-15 relevant, high-traffic hashtags (Korean & English mixed).
+        `;
+    } else if (platform === 'twitter') {
+        promptInfo = `
+        - Platform: Twitter (X)
+        - Style: Concise, punchy, thread-starter style.
+        - Features: Hook the reader in the first sentence. Use 1-2 emojis max.
+        - Hashtags: 2-3 core hashtags.
+        - Length: Max 280 characters for the main tweet.
+        `;
+    } else {
+        promptInfo = `
+        - Platform: LinkedIn
+        - Style: Professional, insightful, business-oriented.
+        - Features: Focus on industry trends, professional growth, and key learnings. Use bullet points if needed.
+        - Hashtags: 3-5 professional hashtags.
+        `;
+    }
+
+    const prompt = `
+    You are a Social Media Marketing Expert.
+    Your task is to create a viral social media post based on the provided blog content.
+
+    ${promptInfo}
+
+    Blog Content:
+    """
+    ${postContent.substring(0, 3000)}... (truncated)
+    """
+
+    INSTRUCTIONS:
+    1. Analyze the blog content to extract the most engaging points.
+    2. Write the social media post in KOREAN (한국어).
+    3. Output MUST be valid JSON:
+    {
+      "platform": "${platform}",
+      "content": "The actual post text (including emojis)",
+      "hashtags": ["#tag1", "#tag2"]
+    }
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("No JSON found in response");
+        }
+
+        return JSON.parse(jsonMatch[0]) as SocialContentResult;
+    } catch (error) {
+        console.error("Social Content Generation Failed:", error);
+        throw new Error("소셜 콘텐츠 생성에 실패했습니다.");
+    }
+}
