@@ -106,29 +106,39 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
             {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
             <style>{`
 /* 1. Reset & Typography */
-.mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text, .mermaid .node div, .mermaid .node span {
+/* 1. Reset & Typography */
+.mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text, .mermaid .node div, .mermaid .node span, .mermaid .node p {
     font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-weight: 600 !important;
     
-    /* [SAFE MARGIN STRATEGY] 
-       Config uses 16px, Styles use 13.5px. 
-       This delta ensures strictly contained text. 
+    /* [NUCLEAR MARGIN STRATEGY] 
+       Config: 20px / Actual: 12px.
+       Delta: 8px. Secure spacing guaranteed.
     */
-    font-size: 13.5px !important; 
-    line-height: 1.5 !important;
+    font-size: 12px !important; 
+    line-height: 1.4 !important; /* Tight line height to prevent vertical clipping */
     letter-spacing: -0.01em !important;
     color: #1e293b !important;
     fill: #1e293b !important;
     
     /* Layout Safety */
     overflow: visible !important;
-    white-space: normal !important; /* Force standard wrapping */
+    white-space: normal !important; 
     word-wrap: break-word !important;
+    word-break: break-word !important; /* Force breaking for long Korean words */
 }
 
-/* Ensure container allows overflow */
+/* Ensure container allows overflow and auto height */
 .mermaid .node foreignObject {
     overflow: visible !important;
+    height: auto !important;
+}
+.mermaid .node foreignObject div {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    white-space: normal !important;
 }
 
 /* 2. Nodes: The "Card" Look */
@@ -399,14 +409,14 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 curve: 'basis', // Smooth curves are essential for premium look
                 nodeSpacing: 50,
                 rankSpacing: 50,
-                padding: 15, // Standard padding, rely on CSS for breathing room
+                padding: 40, // Increased padding
             },
             themeVariables: {
-                // "Safe Margin Strategy"
-                // 1. We tell Mermaid to calculate layout for 16px text.
-                // 2. We render text at 13.5px via CSS.
-                // Result: The box is always bigger than the text. Zero clipping.
-                fontSize: '16px',
+                // "Nuclear Margin Strategy"
+                // 1. Calculate layout for 20px (Huge Box)
+                // 2. Render text at 12px (Small Text)
+                // Result: Massive 8px safety delta + Padding 40 = Impossible to clip.
+                fontSize: '20px',
 
                 // Base colors (Overridden by CSS, but good for fallback)
                 primaryColor: '#ffffff',
