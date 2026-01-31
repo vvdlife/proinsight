@@ -106,14 +106,24 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
             {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
             <style>{`
 /* 1. Reset & Typography */
-.mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
+.mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text, .mermaid .node div, .mermaid .node span {
     font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-weight: 600 !important;
-    font-size: 15px !important; /* Render size */
-    line-height: 1.5 !important;
+    font-size: 16px !important; /* Standard readable size */
+    line-height: 1.6 !important;
     letter-spacing: -0.01em !important;
-    color: #1e293b !important; /* slate-800 */
+    color: #1e293b !important;
     fill: #1e293b !important;
+    
+    /* Safety mechanisms against clipping */
+    overflow: visible !important;
+    white-space: pre-wrap !important; /* Allow wrapping */
+    word-break: break-word !important; /* Prevent horizontal overflow */
+}
+
+/* Ensure container allows overflow */
+.mermaid .node foreignObject {
+    overflow: visible !important;
 }
 
 /* 2. Nodes: The "Card" Look */
@@ -130,8 +140,8 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 
 /* Shape Refinements */
 .mermaid .node rect {
-    rx: 16px !important; /* More rounded */
-    ry: 16px !important;
+    rx: 12px !important; /* Slightly less rounded for standard look */
+    ry: 12px !important;
 }
 
 /* 3. Interactive Hover Effects */
@@ -382,15 +392,14 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis', // Smooth curves are essential for premium look
-                nodeSpacing: 100, // Even wider spacing
-                rankSpacing: 100,
-                padding: 60, // Massive padding for internal breathing room
+                nodeSpacing: 50,
+                rankSpacing: 50,
+                padding: 15, // Standard padding, rely on CSS for breathing room
             },
             themeVariables: {
-                // "The Extreme Lie Trick v4.0" 
-                // We tell Mermaid the font is GIGANTIC (48px) so it calculates enormous boxes.
-                // CSS then shrinks text to 15px, guaranteeing no clipping ever happens.
-                fontSize: '48px',
+                // Revert "Lie Trick" -> Standard Robust Setup
+                // Using standard font size but enforcing overflow visibility
+                fontSize: '16px',
 
                 // Base colors (Overridden by CSS, but good for fallback)
                 primaryColor: '#ffffff',
