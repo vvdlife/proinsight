@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import mermaid from "mermaid";
@@ -68,12 +68,93 @@ const Mermaid = ({ chart }: { chart: string }) => {
 const slugify = (text: string) =>
     text.toLowerCase().replace(/[^\w\s-가-힣]/g, '').trim().replace(/\s+/g, '-');
 
+const Blockquote = ({ children }: any) => {
+    // Helper to find the alert type from children
+    const getAlertType = (children: React.ReactNode): { type: "note" | "tip" | "important" | "warning" | "caution" | null; title?: string; content: React.ReactNode } => {
+        const childrenArray = React.Children.toArray(children);
+        const firstChild = childrenArray[0];
+
+        if (React.isValidElement(firstChild) && firstChild.type === 'p') {
+            const grandChildren = React.Children.toArray(firstChild.props.children);
+            const firstGrandChild = grandChildren[0];
+
+            if (typeof firstGrandChild === 'string') {
+                const match = firstGrandChild.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)/i);
+                if (match) {
+                    const type = match[1].toLowerCase() as any;
+                    const title = match[2];
+                    // Remove the marker from the first element
+                    const newFirstGrandChild = firstGrandChild.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '');
+
+                    // Reconstruct content without the marker
+                    const newContent = [
+                        // If there is title text remaining on the first line, keep it (bolded perhaps) or just part of content?
+                        // Usually GitHub puts the type as title. The user seems to use "![TIP] Title: Content" format.
+                        // Let's handle the user's specific format: "![TIP] Analyst Note: ..."
+                        // Actually the user's screenshot text is: "[!TIP] Analyst Note: AI를..."
+                        // The regex `^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]` matches the start.
+
+                        // Let's return the rest of the text as content.
+                        ...grandChildren
+                    ];
+                    // Replace the first string node
+                    newContent[0] = newFirstGrandChild;
+
+                    return {
+                        type,
+                        title: title || type.toUpperCase(),
+                        content: (
+                            <div className="text-sm [&>p]:mb-0">
+                                {React.createElement('p', firstChild.props, ...newContent)}
+                                {childrenArray.slice(1)}
+                            </div>
+                        )
+                    };
+                }
+            }
+        }
+        return { type: null, content: children };
+    };
+
+    const { type, content } = getAlertType(children);
+
+    if (type) {
+        const styles = {
+            note: { icon: Info, color: "text-blue-500", border: "border-blue-500", bg: "bg-blue-50 dark:bg-blue-950/30" },
+            tip: { icon: Lightbulb, color: "text-green-500", border: "border-green-500", bg: "bg-green-50 dark:bg-green-950/30" },
+            important: { icon: AlertTriangle, color: "text-purple-500", border: "border-purple-500", bg: "bg-purple-50 dark:bg-purple-950/30" },
+            warning: { icon: AlertTriangle, color: "text-orange-500", border: "border-orange-500", bg: "bg-orange-50 dark:bg-orange-950/30" },
+            caution: { icon: AlertTriangle, color: "text-red-500", border: "border-red-500", bg: "bg-red-50 dark:bg-red-950/30" },
+        };
+        const style = styles[type];
+        const Icon = style.icon;
+
+        return (
+            <div className={cn("my-6 rounded-lg border-l-4 p-4", style.border, style.bg)}>
+                <div className="flex items-start gap-3">
+                    <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", style.color)} />
+                    <div className="flex-1 min-w-0">
+                        {content}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <blockquote className="my-8 border-l-4 border-primary/40 pl-6 py-2 italic bg-muted/20 rounded-r-lg">
+            {children}
+        </blockquote>
+    );
+};
+
 export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            theme: "default",
+            theme: "neutral", // Changed to neutral for cleaner look
             securityLevel: "loose",
+            fontFamily: 'inherit',
         });
     }, []);
 
@@ -86,7 +167,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
             prose-p:leading-8 prose-p:mb-6 prose-p:text-[1.05rem]
             prose-li:leading-7 prose-li:my-2
             prose-strong:text-primary/90 prose-strong:font-bold
-            prose-blockquote:not-italic prose-blockquote:border-l-4 prose-blockquote:border-primary/50 prose-blockquote:bg-muted/30 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:my-8
+            prose-blockquote:not-italic prose-blockquote:border-none prose-blockquote:bg-transparent prose-blockquote:p-0 prose-blockquote:my-0
             prose-code:before:content-none prose-code:after:content-none
         ">
             <ReactMarkdown
@@ -132,17 +213,8 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                         </a>
                     ),
 
-                    // 4. Blockquote -> Custom Style (Replacing previous Alert logic for cleaner look, or keeping it but styled better)
-                    // Let's use the CSS-based blockquote for standard quotes, and Alert for specific callouts if needed.
-                    // But re-using the Alert logic is fine if we style it well.
-                    // Actually, let's revert to standard blockquote for better "blog" feel, unless it's a callout.
-                    blockquote: ({ children }) => {
-                        return (
-                            <blockquote className="my-8 border-l-4 border-primary/40 pl-6 py-2 italic bg-muted/20 rounded-r-lg">
-                                {children}
-                            </blockquote>
-                        );
-                    },
+                    // 4. Blockquote -> Alerts Detection
+                    blockquote: Blockquote,
 
                     // 5. Code -> Syntax Highlighting or Mermaid
                     code: ({ node, inline, className, children, ...props }: any) => {
