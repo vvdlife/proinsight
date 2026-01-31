@@ -22,6 +22,7 @@ model Post {
   status    String   @default("DRAFT")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  socialPosts SocialPost[]
 }
 
 model UserSettings {
@@ -30,4 +31,17 @@ model UserSettings {
   apiKey    String?  // Google Gemini API Key
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SocialPost {
+  id        String   @id @default(cuid())
+  platform  String   // "instagram", "twitter", "linkedin"
+  content   String
+  hashtags  String[]
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([postId, platform])
 }

@@ -35,7 +35,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useReactToPrint } from "react-to-print";
 import { SeoAnalysisPanel } from "@/features/post/components/SeoAnalysisPanel";
-import { SocialSharePanel } from "@/features/post/components/SocialSharePanel";
+import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDashboard";
 
 
 // Dynamic import for MDXEditor to avoid SSR issues
@@ -234,10 +234,10 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                                             블로그 글을 바탕으로 인스타그램, 트위터, 링크드인에 올릴 홍보 콘텐츠를 생성합니다.
                                         </SheetDescription>
                                     </SheetHeader>
-                                    <SocialSharePanel
+                                    <SocialMediaDashboard
+                                        postId={initialPost.id}
                                         postContent={content}
-                                        postTitle={initialPost.topic}
-                                        postImage={initialPost.coverImage}
+                                        existingPosts={initialPost.socialPosts || []}
                                     />
                                 </SheetContent>
                             </Sheet>

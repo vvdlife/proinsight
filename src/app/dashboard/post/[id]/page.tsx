@@ -29,6 +29,9 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
             id,
             userId,
         },
+        include: {
+            socialPosts: true,
+        },
     });
 
     if (!post) {
