@@ -45,7 +45,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
                     <Link href="/" className="mb-8 flex justify-center px-4">
-                        <div className="relative h-20 w-full max-w-[150px]">
+                        <div className="relative h-14 w-full max-w-[120px]">
                             <Image
                                 src="/logo.png"
                                 alt="ProInsight Logo"
