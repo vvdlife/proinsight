@@ -64,15 +64,55 @@ const Mermaid = ({ chart }: { chart: string }) => {
 
     return (
         <>
-            {/* Global Style Override for Mermaid to fix truncation */}
-            {/* We set internal Font Size to 18px so Mermaid calculates a large box, 
-                then we force it to 15px via CSS so there is plenty of padding. */}
+            {/* Global Style Override for Mermaid to fix truncation & Modernize Design */}
             <style>{`
-                .mermaid .nodeLabel, .mermaid .edgeLabel {
+                /* Modern Mermaid Design - Nodes */
+                .mermaid .node rect, .mermaid .node circle, .mermaid .node ellipse, .mermaid .node polygon, .mermaid .node path {
+                    fill: #ffffff !important;
+                    stroke: #e2e8f0 !important; /* slate-200 */
+                    stroke-width: 2px !important;
+                    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05)) !important; 
+                    transition: all 0.2s ease;
+                }
+                
+                /* Rounded Corners for Rects */
+                .mermaid .node rect {
+                    rx: 12px !important;
+                    ry: 12px !important;
+                }
+
+                /* Font Styling - Rendering at 15px while calculated at 20px (Lie Trick) */
+                .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text {
+                    font-family: Pretendard, Inter, ui-sans-serif, system-ui, sans-serif !important;
                     font-size: 15px !important;
-                    line-height: 1.5 !important;
-                    font-family: ui-sans-serif, system-ui, sans-serif !important;
-                    white-space: normal !important;
+                    line-height: 1.6 !important;
+                    font-weight: 600 !important;
+                    color: #1e293b !important; /* slate-800 */
+                    white-space: normal !important; /* Allow wrapping */
+                }
+
+                /* Edge Styling */
+                .mermaid .edgePath .path {
+                    stroke: #94a3b8 !important; /* slate-400 */
+                    stroke-width: 1.5px !important;
+                }
+                .mermaid .arrowheadPath {
+                    fill: #94a3b8 !important;
+                }
+                
+                /* Dark Mode Adjustments */
+                .dark .mermaid .node rect, .dark .mermaid .node circle, .dark .mermaid .node ellipse, .dark .mermaid .node polygon {
+                    fill: #1e1e20 !important;
+                    stroke: #3f3f46 !important; /* zinc-700 */
+                }
+                .dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid .label, .dark .mermaid .node text {
+                    color: #e4e4e7 !important; /* zinc-200 */
+                }
+                .dark .mermaid .edgePath .path {
+                    stroke: #71717a !important; /* zinc-500 */
+                }
+                .dark .mermaid .arrowheadPath {
+                    fill: #71717a !important;
                 }
             `}</style>
             <div className="relative group w-full my-8">
@@ -235,27 +275,36 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            // 'neutral' theme is best for clarity
-            theme: "neutral",
+            // Use 'base' for full customization
+            theme: "base",
             securityLevel: "loose",
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontFamily: 'Pretendard, ui-sans-serif, system-ui, sans-serif',
             flowchart: {
                 useMaxWidth: false,
                 htmlLabels: true,
                 curve: 'basis',
-                // Increase padding to prevent clipping?
-                nodeSpacing: 50,
-                rankSpacing: 50,
-                padding: 20, // Generous padding
+                nodeSpacing: 60, // Give more space
+                rankSpacing: 60,
+                padding: 30, // Very generous calc padding
             },
             themeVariables: {
-                // TRICK: Tell Mermaid the font is 20px so it calculates a large enough box.
-                // We then FORCE the actual font size to 15px via CSS in the component.
-                // This ensures the box is always bigger than the text.
+                // Calculation Font Size (Lie Trick: 20px)
                 fontSize: '20px',
-                primaryColor: '#e0e0e0',
-                lineColor: '#666',
-                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+
+                // Colors - Modern Slate/White Theme
+                primaryColor: '#ffffff',
+                primaryTextColor: '#0f172a', // slate-900
+                primaryBorderColor: '#cbd5e1', // slate-300
+                lineColor: '#64748b', // slate-500
+                secondaryColor: '#f8fafc', // slate-50
+                tertiaryColor: '#ffffff',
+
+                // Backgrounds
+                mainBkg: '#ffffff',
+                nodeBorder: '#e2e8f0',
+                clusterBkg: '#f8fafc',
+
+                fontFamily: 'Pretendard, ui-sans-serif, system-ui, sans-serif',
             },
         });
     }, []);
