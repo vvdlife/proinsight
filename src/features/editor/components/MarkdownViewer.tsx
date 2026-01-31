@@ -41,20 +41,40 @@ const Mermaid = ({ chart }: { chart: string }) => {
         }
     }, [chart]);
 
-    // Prevent body scroll when fullscreen
+    // Prevent body scroll and handle ESC key when fullscreen
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isFullscreen && e.key === "Escape") {
+                setIsFullscreen(false);
+            }
+        };
+
         if (isFullscreen) {
             document.body.style.overflow = "hidden";
+            window.addEventListener("keydown", handleKeyDown);
         } else {
             document.body.style.overflow = "";
+            window.removeEventListener("keydown", handleKeyDown);
         }
         return () => {
             document.body.style.overflow = "";
+            window.removeEventListener("keydown", handleKeyDown);
         };
     }, [isFullscreen]);
 
     return (
         <>
+            {/* Global Style Override for Mermaid to fix truncation */}
+            {/* We set internal Font Size to 18px so Mermaid calculates a large box, 
+                then we force it to 15px via CSS so there is plenty of padding. */}
+            <style>{`
+                .mermaid .nodeLabel, .mermaid .edgeLabel {
+                    font-size: 15px !important;
+                    line-height: 1.5 !important;
+                    font-family: ui-sans-serif, system-ui, sans-serif !important;
+                    white-space: normal !important;
+                }
+            `}</style>
             <div className="relative group w-full my-8">
                 <div
                     className="w-full overflow-x-auto bg-white dark:bg-zinc-900 rounded-lg border shadow-sm p-4 cursor-pointer transition-colors hover:border-primary/50"
@@ -226,10 +246,13 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 // Increase padding to prevent clipping?
                 nodeSpacing: 50,
                 rankSpacing: 50,
-                padding: 15, // Try to add generous padding defaults
+                padding: 20, // Generous padding
             },
             themeVariables: {
-                fontSize: '16px',
+                // TRICK: Tell Mermaid the font is 20px so it calculates a large enough box.
+                // We then FORCE the actual font size to 15px via CSS in the component.
+                // This ensures the box is always bigger than the text.
+                fontSize: '20px',
                 primaryColor: '#e0e0e0',
                 lineColor: '#666',
                 fontFamily: 'ui-sans-serif, system-ui, sans-serif',
