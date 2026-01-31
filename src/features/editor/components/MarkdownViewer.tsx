@@ -28,6 +28,7 @@ interface MarkdownViewerProps {
 
 const Mermaid = ({ chart }: { chart: string }) => {
     const [svg, setSvg] = useState<string>("");
+    const [isLoading, setIsLoading] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const chartRef = useRef<HTMLDivElement>(null);
     const uniqueId = useMemo(() => `mermaid-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -35,6 +36,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
     useEffect(() => {
         const renderChart = async () => {
             if (!chart) return;
+            setIsLoading(true);
 
             try {
                 // Smart Style Injection
@@ -76,9 +78,15 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
             } catch (error) {
                 console.error("Mermaid rendering failed:", error);
                 setSvg(`<div class="text-red-500 p-4 border border-red-200 rounded bg-red-50">Failed to render diagram</div>`);
+            } finally {
+                setIsLoading(false);
             }
         };
-        renderChart();
+        // Small delay to prevent layout thrashing and allow skeleton to show briefly
+        const timer = setTimeout(() => {
+            renderChart();
+        }, 300);
+        return () => clearTimeout(timer);
     }, [chart, uniqueId]);
 
     useEffect(() => {
@@ -128,29 +136,21 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 
     return (
         <>
-            {/* Premium Mermaid Design v2.0 - "The Ultimate CSS Hack" */}
+            {/* Premium Mermaid Design v3.0 - UI/UX Polish */}
             <style>{`
-/* 1. Reset & Typography */
 /* 1. Reset & Typography */
 .mermaid .nodeLabel, .mermaid .edgeLabel, .mermaid .label, .mermaid .node text, .mermaid .node div, .mermaid .node span, .mermaid .node p {
     font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-weight: 600 !important;
-    
-    /* [NUCLEAR MARGIN STRATEGY] 
-       Config: 20px / Actual: 12px.
-       Delta: 8px. Secure spacing guaranteed.
-    */
     font-size: 12px !important; 
-    line-height: 1.4 !important; /* Tight line height to prevent vertical clipping */
+    line-height: 1.4 !important;
     letter-spacing: -0.01em !important;
     color: #1e293b !important;
     fill: #1e293b !important;
-    
-    /* Layout Safety */
     overflow: visible !important;
     white-space: normal !important; 
     word-wrap: break-word !important;
-    word-break: break-word !important; /* Force breaking for long Korean words */
+    word-break: break-word !important;
 }
 
 /* Ensure container allows overflow and auto height */
@@ -171,29 +171,26 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
     fill: #ffffff !important;
     stroke: #cbd5e1 !important; /* slate-300 */
     stroke-width: 1.5px !important;
-
-    /* Deep, rich shadow (Tailwind shadow-xl equivalent) */
-    filter: drop-shadow(0 20px 25px -5px rgb(0 0 0 / 0.04)) drop-shadow(0 8px 10px -6px rgb(0 0 0 / 0.01)) !important;
-
+    
+    /* Standard Shadow */
+    filter: drop-shadow(0 4px 6px -1px rgb(0 0 0 / 0.1));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Shape Refinements */
 .mermaid .node rect {
-    rx: 8px !important; /* Tight radius for cleaner look */
+    rx: 8px !important;
     ry: 8px !important;
 }
 
 /* 3. Interactive Hover Effects */
-/* We target the group (g) hover if possible, but styling the rect on hover works best */
 .mermaid g.node:hover rect, 
 .mermaid g.node:hover polygon, 
 .mermaid g.node:hover circle {
     stroke: #6366f1 !important; /* Indigo-500 */
     stroke-width: 2px !important;
     fill: #f8fafc !important; /* Slate-50 */
-    /* Lift effect via filter */
-    filter: drop-shadow(0 25px 50px -12px rgb(99 102 241 / 0.15)) !important;
+    filter: drop-shadow(0 10px 15px -3px rgb(99 102 241 / 0.2)) !important;
 }
 .mermaid g.node:hover .nodeLabel,
 .mermaid g.node:hover text {
@@ -219,11 +216,12 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
     stroke: none !important;
 }
 
-/* 5. Dark Mode Logic */
+/* 5. Dark Mode Logic (Enhanced Glow) */
 .dark .mermaid .node rect, .dark .mermaid .node polygon, .dark .mermaid .node circle {
     fill: #18181b !important; /* zinc-900 */
     stroke: #3f3f46 !important; /* zinc-700 */
-    filter: drop-shadow(0 10px 15px -3px rgb(0 0 0 / 0.5)) !important;
+    /* Glow Effect for Dark Mode */
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.15)) !important; 
 }
 .dark .mermaid .nodeLabel, .dark .mermaid .edgeLabel, .dark .mermaid text {
     color: #e4e4e7 !important; /* zinc-200 */
@@ -232,59 +230,81 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
 .dark .mermaid g.node:hover rect {
     stroke: #818cf8 !important; /* indigo-400 */
     fill: #27272a !important; /* zinc-800 */
-    filter: drop-shadow(0 0 20px rgb(129 140 248 / 0.2)) !important;
+    filter: drop-shadow(0 0 20px rgb(129 140 248 / 0.3)) !important;
 }
 `}</style>
 
-            {/* Inline View */}
-            <div className="relative group w-full my-8 bg-white/50 dark:bg-zinc-900/50 rounded-xl border border-slate-200 dark:border-zinc-800 p-2 overflow-hidden hover:border-indigo-400 transition-colors duration-300">
-                {svg.startsWith("<div") ? (
-                    <div className="space-y-2 w-full">
-                        <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            <span>다이어그램 렌더링에 실패했습니다.</span>
-                        </div>
-                        <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
-                            {chart}
-                        </div>
-                    </div>
-                ) : (
-                    <div
-                        className="overflow-x-auto p-4 flex justify-center min-h-[150px] items-center cursor-zoom-in"
-                        onClick={() => setIsFullscreen(true)}
-                        dangerouslySetInnerHTML={{ __html: svg }}
-                    />
-                )}
+            {/* Premium Container with Header */}
+            <div className="w-full my-10 bg-white dark:bg-zinc-950 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
 
-                {!svg.startsWith("<div") && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white dark:bg-black/50 dark:hover:bg-black/80 backdrop-blur-sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsFullscreen(true);
-                        }}
-                    >
-                        <Maximize2 className="h-4 w-4" />
-                    </Button>
-                )}
+                {/* Header & Toolbar */}
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 dark:bg-zinc-900/80 border-b border-slate-100 dark:border-zinc-800 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        <div className="p-1.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                            <RotateCcw className="h-3.5 w-3.5 rotate-90" /> {/* Network/Graph icon proxy */}
+                        </div>
+                        <span>Structure View</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 px-0 text-muted-foreground hover:text-foreground" onClick={handleCopySource} title="코드 복사">
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 px-0 text-muted-foreground hover:text-foreground" onClick={handleDownload} title="이미지 저장">
+                            <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 px-0 text-muted-foreground hover:text-foreground" onClick={() => setIsFullscreen(true)} title="전체 화면">
+                            <Maximize2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="relative w-full p-6 min-h-[200px] flex items-center justify-center bg-white dark:bg-zinc-950 transition-colors duration-300">
+                    {/* Loading Skeleton */}
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 z-10 bg-white dark:bg-zinc-950 animate-pulse">
+                            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-zinc-800" />
+                            <div className="w-48 h-4 rounded bg-slate-100 dark:bg-zinc-800" />
+                            <div className="w-32 h-4 rounded bg-slate-100 dark:bg-zinc-800" />
+                        </div>
+                    )}
+
+                    {/* Chart | Error */}
+                    <div className={cn("w-full transition-opacity duration-500", isLoading ? "opacity-0" : "opacity-100")}>
+                        {svg.startsWith("<div") ? (
+                            <div className="space-y-4 w-full">
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-900 text-sm font-medium flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span>다이어그램 렌더링에 실패했습니다.</span>
+                                </div>
+                                <div className="p-4 bg-muted rounded-lg text-xs font-mono overflow-x-auto whitespace-pre">
+                                    {chart}
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                className="overflow-x-auto p-2 flex justify-center items-center cursor-zoom-in"
+                                onClick={() => setIsFullscreen(true)}
+                                dangerouslySetInnerHTML={{ __html: svg }}
+                            />
+                        )}
+                    </div>
+                </div>
             </div>
 
+            {/* Fullscreen Modal */}
             {isFullscreen && (
                 <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md p-4 md:p-8 flex flex-col animate-in fade-in duration-200">
                     <div className="flex justify-end mb-4 gap-2">
-                        {/* Download Button */}
+                        {/* Toolbar in Fullscreen */}
                         <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
                             <Download className="h-4 w-4" />
                             <span>PNG 저장</span>
                         </Button>
-                        {/* Copy Source Button */}
                         <Button variant="outline" size="sm" onClick={handleCopySource} className="gap-2">
                             <Copy className="h-4 w-4" />
                             <span>코드 복사</span>
                         </Button>
-                        {/* Close Button */}
                         <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(false)}>
                             <X className="h-6 w-6" />
                         </Button>
@@ -303,7 +323,7 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
                         >
                             {({ zoomIn, zoomOut, resetTransform }) => (
                                 <>
-                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 bg-background/80 backdrop-blur rounded-lg border shadow-lg z-10">
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 bg-background/80 backdrop-blur rounded-lg border shadow-lg z-10 transition-transform hover:scale-105">
                                         <Button variant="ghost" size="icon" onClick={() => zoomIn()}>
                                             <ZoomIn className="h-4 w-4" />
                                         </Button>
