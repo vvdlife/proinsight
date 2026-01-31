@@ -75,7 +75,8 @@ const Blockquote = ({ children }: any) => {
         const firstChild = childrenArray[0];
 
         if (React.isValidElement(firstChild) && firstChild.type === 'p') {
-            const grandChildren = React.Children.toArray(firstChild.props.children);
+            const element = firstChild as React.ReactElement<any>;
+            const grandChildren = React.Children.toArray(element.props.children);
             const firstGrandChild = grandChildren[0];
 
             if (typeof firstGrandChild === 'string') {
