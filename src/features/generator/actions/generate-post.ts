@@ -9,8 +9,6 @@ import { generateImagePrompt } from "@/lib/services/image-prompt";
 import { generateBlogImage } from "@/lib/services/image-gen";
 import { planSEOStrategy } from "@/lib/services/seo-planner";
 import { generateJSONLD } from "@/lib/services/ai";
-import { generateVoiceScript } from "@/lib/services/voice-script";
-import { generateAudio } from "@/lib/services/tts";
 
 export type GeneratePostResult = {
     success: boolean;
@@ -51,18 +49,12 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
 
         // 2. Writing (Drafting is now the final content)
         console.log("✍️ [Phase 2] Writing content...");
-        // Note: data.experience is ignored/removed as per request
         const content = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
         // 3. Schema Generation
         const schemaMarkup = generateJSONLD(seoStrategy, content);
 
         // 4. Save to Database
-        // We skip "Refining" so we mark it as COMPLETED (or DRAFT if checking is needed, but user wants simplicity)
-        // Let's stick to DRAFT so they can edit, or COMPLETED if it's "done". 
-        // Previously it was DRAFT -> Refine -> COMPLETED.
-        // Let's set it to PUBLISH_READY or just DRAFT. 
-        // Based on "Simplify", let's save as DRAFT but it's the "final AI output".
         const post = await prisma.post.create({
             data: {
                 topic: data.topic,
@@ -71,7 +63,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
                 status: "DRAFT",
                 userId,
                 coverImage: null,
-                audioUrl: null,
+                audioUrl: null, // Always null as audio feature is removed
                 schemaMarkup: schemaMarkup,
             },
         });
@@ -116,33 +108,5 @@ export async function generatePostImage(postId: string, topic: string) {
     } catch (e) {
         console.error("   ❌ Image Generation Failed:", e);
         return { success: false, message: "Image generation failed" };
-    }
-}
-
-// Separate Action for Audio (Kept for performance)
-export async function generatePostAudio(postId: string, content: string) {
-    const { userId } = await auth();
-    if (!userId) return { success: false, message: "Unauthorized" };
-
-    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
-    const apiKey = settings?.apiKey;
-    if (!apiKey) return { success: false, message: "API Key not found" };
-
-    try {
-        console.log("🎙️ [Separate Action] Recording Audio Briefing...");
-        const script = await generateVoiceScript(content, apiKey);
-        const audioLink = await generateAudio(script, Date.now().toString());
-
-        if (audioLink) {
-            await prisma.post.update({
-                where: { id: postId, userId },
-                data: { audioUrl: audioLink }
-            });
-            return { success: true, audioUrl: audioLink };
-        }
-        return { success: false, message: "Audio generation returned null" };
-    } catch (e) {
-        console.error("   ❌ Voice Generation Failed:", e);
-        return { success: false, message: "Voice generation failed" };
     }
 }

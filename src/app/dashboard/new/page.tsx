@@ -1,7 +1,7 @@
 // Path: src/app/dashboard/new/page.tsx
 "use client";
 
-import { generatePost, generatePostImage, generatePostAudio } from "@/features/generator/actions/generate-post";
+import { generatePost, generatePostImage } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
 import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target, Sparkles } from "lucide-react";
@@ -62,7 +62,6 @@ export default function NewPostPage() {
             length: undefined,
             includeImage: false,
             rivalUrl: ""
-            // experience removed
         } as any,
     });
 
@@ -81,7 +80,7 @@ export default function NewPostPage() {
                     return;
                 }
 
-                // Step 2: Text Generation (Unified)
+                // Step 2: Text Generation
                 setStatus("WRITING");
 
                 let finalContext = searchResult.context;
@@ -93,26 +92,16 @@ export default function NewPostPage() {
 
                 if (result.success && result.postId) {
                     const postId = result.postId;
-                    const content = result.content || "";
 
-                    toast.info("글 생성이 완료되었습니다! 미디어를 생성합니다... 🎨🎙️");
+                    toast.info("글 생성이 완료되었습니다! 이미지를 생성합니다... 🎨");
 
-                    // Step 3: Parallel Media Generation
-
+                    // Step 3: Image Generation (Only Image now)
                     if (data.includeImage) {
                         generatePostImage(postId, data.topic)
                             .then(res => {
                                 if (!res.success) toast.warning("이미지 생성 실패");
                             })
                             .catch(e => console.error("Image gen error", e));
-                    }
-
-                    if (content.length > 50) {
-                        generatePostAudio(postId, content)
-                            .then(res => {
-                                if (!res.success) toast.warning("오디오 생성 실패");
-                            })
-                            .catch(e => console.error("Audio gen error", e));
                     }
 
                     toast.success("상세 페이지로 이동합니다.");
@@ -270,8 +259,6 @@ export default function NewPostPage() {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Experience Section Removed */}
 
                             <FormField
                                 control={form.control}
