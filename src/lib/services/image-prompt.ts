@@ -6,6 +6,7 @@ export async function generateImagePrompt(topic: string, apiKey: string): Promis
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 
+    const prompt = `
 You are a creative director for a tech blog.
         Task: Create a perfect English image prompt for a blog thumbnail based on the topic: "${topic}".
     Style requirements: Photorealistic, Cinematic lighting, High Quality, Abstract tech element.
@@ -20,6 +21,6 @@ You are a creative director for a tech blog.
     } catch (error) {
         console.error("Image Prompt Generation Error:", error);
         // Fallback prompt
-        return `High tech abstract background representing ${ topic }, cinematic lighting, photorealistic, 8k`;
+        return `High tech abstract background representing ${topic}, cinematic lighting, photorealistic, 8k`;
     }
 }
