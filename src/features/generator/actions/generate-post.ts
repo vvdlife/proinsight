@@ -1,3 +1,4 @@
+// Path: src/features/generator/actions/generate-post.ts
 "use server";
 
 import { generateBlogPost } from "@/lib/services/ai";
@@ -20,13 +21,11 @@ export type GeneratePostResult = {
     errors?: Record<string, string[]>;
 };
 
+// Renamed logic internally, but kept function name for compatibility (Phase 1: Draft Only)
 export async function generatePost(data: PostFormValues, searchContext?: string): Promise<GeneratePostResult> {
     const { userId } = await auth();
     if (!userId) {
-        return {
-            success: false,
-            message: "로그인이 필요합니다.",
-        };
+        return { success: false, message: "로그인이 필요합니다." };
     }
 
     // BYOK: Fetch API Key
@@ -36,74 +35,90 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
     });
 
     if (!settings?.apiKey) {
-        return {
-            success: false,
-            message: "API Key가 설정되지 않았습니다. 설정 페이지에서 키를 먼저 등록해주세요.",
-        };
+        return { success: false, message: "API Key가 설정되지 않았습니다." };
     }
-
     const apiKey = settings.apiKey;
 
     // 1. Server-side validation
-    const result = postSchema.safeParse(data);
-
-    if (!result.success) {
-        return {
-            success: false,
-            message: "유효성 검사에 실패했습니다.",
-            errors: result.error.flatten().fieldErrors,
-        };
+    const validation = postSchema.safeParse(data);
+    if (!validation.success) {
+        return { success: false, message: "유효성 검사 실패", errors: validation.error.flatten().fieldErrors };
     }
 
     try {
-        console.log("🚀 Starting Generation Pipeline (Pro Mode enabled)...");
+        console.log("🚀 Starting Generation Pipeline (Phase 1: Draft Mode)...");
 
         // 2-1. SEO Planning
         console.log("🧠 [Phase 1] SEO Strategy Planning...");
         const seoStrategy = await planSEOStrategy(data.topic, apiKey);
-        console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
 
-        // 2-2. Drafting (Writer)
-        console.log("✍️ [Phase 2] Drafting content...");
+        // 2-2. Drafting (Writer) - FAST STEP
+        console.log("✍️ [Phase 2] Drafting content (Gemini Flash)...");
         const draftContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
-        // 2-3. Refining (Editor-in-Chief)
-        console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
-        const refinedContent = await refinePost(draftContent, data.topic, apiKey, data.experience);
+        // 2-3. SKIPPING Refine (Moved to Client-side Phase 2)
+        // We save the DRAFT content directly to keep this request under 10-20s.
 
-        // 2-5. Voice Briefing (Radio Host) - Moved to separate action
-        // Audio generation is now handled by client-side call to prevent timeout
-        const audioUrl = null;
+        // 3. Schema Generation (Based on Draft)
+        const schemaMarkup = generateJSONLD(seoStrategy, draftContent);
 
-        // 3. Schema Generation
-        const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
-
-        // 4. Save to Database (Without Image first)
+        // 4. Save to Database (Status: DRAFT)
         const post = await prisma.post.create({
             data: {
                 topic: data.topic,
-                content: refinedContent,
+                content: draftContent, // Saving DRAFT content first
                 tone: data.tone,
-                status: "DRAFT",
+                status: "DRAFT", // Explicitly DRAFT
                 userId,
-                coverImage: null, // Image will be generated separately
-                audioUrl: audioUrl,
+                coverImage: null,
+                audioUrl: null,
                 schemaMarkup: schemaMarkup,
             },
         });
 
         return {
             success: true,
-            message: "텍스트 생성이 완료되었습니다. 미디어(이미지/오디오)를 생성합니다...",
+            message: "초안이 작성되었습니다. 윤문(Refining) 단계를 시작합니다...",
             postId: post.id,
-            content: refinedContent,
+            content: draftContent,
         };
     } catch (error) {
-        console.error("AI Generation Critical Error:", error);
+        console.error("AI Draft Generation Error:", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "AI 글 생성 중 알 수 없는 오류가 발생했습니다.",
+            message: error instanceof Error ? error.message : "초안 생성 중 오류 발생",
         };
+    }
+}
+
+// Step 2: Refine Action (Called from Client)
+export async function refinePostAction(postId: string, draftContent: string, topic: string, experience?: string) {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "Unauthorized" };
+
+    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
+    const apiKey = settings?.apiKey;
+    if (!apiKey) return { success: false, message: "API Key not found" };
+
+    try {
+        console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (Gemini 3 Pro)...");
+        // This is the heavy lifting step (20-30s)
+        const refinedContent = await refinePost(draftContent, topic, apiKey, experience);
+
+        // Update Post
+        await prisma.post.update({
+            where: { id: postId, userId },
+            data: {
+                content: refinedContent,
+                status: "COMPLETED" // Mark as refined
+            }
+        });
+
+        console.log("   ✅ Content Refined & Saved");
+        return { success: true, content: refinedContent };
+    } catch (e) {
+        console.error("   ❌ Refine Failed:", e);
+        return { success: false, message: "Refine failed" };
     }
 }
 
@@ -111,10 +126,7 @@ export async function generatePostImage(postId: string, topic: string) {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
-    const settings = await prisma.userSettings.findUnique({
-        where: { userId },
-        select: { apiKey: true },
-    });
+    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
     const apiKey = settings?.apiKey;
     if (!apiKey) return { success: false, message: "API Key not found" };
 
@@ -126,13 +138,10 @@ export async function generatePostImage(postId: string, topic: string) {
 
         if (imageBase64) {
             console.log("   ✅ Image Generated Successfully");
-
-            // Update Post with Image
             await prisma.post.update({
-                where: { id: postId, userId }, // Security Check
+                where: { id: postId, userId },
                 data: { coverImage: imageBase64 }
             });
-
             return { success: true, imageUrl: imageBase64 };
         }
         return { success: false, message: "Image generation returned null" };
@@ -146,31 +155,22 @@ export async function generatePostAudio(postId: string, content: string) {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
-    const settings = await prisma.userSettings.findUnique({
-        where: { userId },
-        select: { apiKey: true },
-    });
+    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
     const apiKey = settings?.apiKey;
     if (!apiKey) return { success: false, message: "API Key not found" };
 
     try {
         console.log("🎙️ [Separate Action] Recording Audio Briefing...");
-        // Generate Script
         const script = await generateVoiceScript(content, apiKey);
         console.log("   📜 Script Written (approx. words):", script.length);
 
-        // Generate Audio (TTS)
         const audioLink = await generateAudio(script, Date.now().toString());
-
         if (audioLink) {
             console.log("   ✅ Audio Briefing Recorded:", audioLink);
-
-            // Update Post with Audio
             await prisma.post.update({
                 where: { id: postId, userId },
                 data: { audioUrl: audioLink }
             });
-
             return { success: true, audioUrl: audioLink };
         }
         return { success: false, message: "Audio generation returned null" };

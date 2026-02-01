@@ -413,7 +413,13 @@ export default function NewPostPage() {
                                 {status === "WRITING" && (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        글을 작성하고 편집장이 검수 중입니다 (Editing)...
+                                        글을 작성하고 있습니다 (Drafting)...
+                                    </>
+                                )}
+                                {status === "REFINING" && (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        전문가 수준으로 다듬는 중입니다 (Refining)...
                                     </>
                                 )}
                                 {(status === "IDLE" || status === "COMPLETED") && "생성 시작"}
