@@ -27,10 +27,15 @@ export function CardGenerator({ title, summary, author = "ProInsight", date }: C
             // Simple delay to ensure rendering
             await new Promise((resolve) => setTimeout(resolve, 500));
 
+            // Calculate optimal pixel ratio to reach target 1080x1080
+            const currentWidth = cardRef.current.clientWidth;
+            const targetWidth = 1080;
+            const ratio = Math.max(2, targetWidth / currentWidth);
+
             const dataUrl = await toPng(cardRef.current, {
                 quality: 0.95,
                 cacheBust: true,
-                pixelRatio: 2, // High resolution for Retina displays
+                pixelRatio: ratio,
             });
 
             const link = document.createElement("a");
@@ -68,8 +73,7 @@ export function CardGenerator({ title, summary, author = "ProInsight", date }: C
                 {/* The Card Itself (1:1 Aspect Ratio) */}
                 <div
                     ref={cardRef}
-                    className="w-[400px] h-[400px] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8 flex flex-col justify-between text-white relative shadow-2xl"
-                    style={{ aspectRatio: '1/1' }}
+                    className="w-full h-auto aspect-square bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 sm:p-8 flex flex-col justify-between text-white relative shadow-2xl"
                 >
                     {/* Background Pattern/Overlay */}
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]"></div>
@@ -77,25 +81,25 @@ export function CardGenerator({ title, summary, author = "ProInsight", date }: C
                     {/* Content */}
                     <div className="relative z-10 flex flex-col h-full">
                         {/* Header */}
-                        <div className="flex items-center justify-between border-b border-white/20 pb-4 mb-4">
-                            <span className="font-bold tracking-widest text-xs uppercase opacity-80">ProInsight Tech Brief</span>
-                            <span className="text-xs opacity-80">{date || new Date().toLocaleDateString()}</span>
+                        <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-3">
+                            <span className="font-bold tracking-widest text-[10px] sm:text-xs uppercase opacity-80">ProInsight Tech Brief</span>
+                            <span className="text-[10px] sm:text-xs opacity-80">{date || new Date().toLocaleDateString()}</span>
                         </div>
 
                         {/* Main Title */}
                         <div className="flex-1 flex items-center">
-                            <h1 className="text-3xl font-extrabold leading-tight tracking-tight drop-shadow-sm line-clamp-4">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight tracking-tight drop-shadow-sm line-clamp-4">
                                 {title}
                             </h1>
                         </div>
 
                         {/* Summary / Key Takeaways */}
-                        <div className="mt-6 bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/10">
-                            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-white/70">
+                        <div className="mt-4 sm:mt-6 bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-md border border-white/10">
+                            <div className="flex items-center gap-2 mb-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/70">
                                 <Layers className="h-3 w-3" />
                                 Key Takeaways
                             </div>
-                            <ul className="space-y-2 text-sm font-medium leading-relaxed">
+                            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm font-medium leading-relaxed">
                                 {summaryPoints.length > 0 ? (
                                     summaryPoints.map((point, i) => (
                                         <li key={i} className="flex items-start gap-2">
@@ -110,7 +114,7 @@ export function CardGenerator({ title, summary, author = "ProInsight", date }: C
                         </div>
 
                         {/* Footer */}
-                        <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between text-xs opacity-75">
+                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/20 flex items-center justify-between text-[10px] sm:text-xs opacity-75">
                             <span>Written by AI Agent</span>
                             <span className="font-serif italic">proinsight.io</span>
                         </div>
