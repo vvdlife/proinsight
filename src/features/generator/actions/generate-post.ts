@@ -74,7 +74,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
 
             // 2-3. Refining (Editor-in-Chief)
             console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
-            const refinedContent = await refinePost(draftContent, data.topic, apiKey);
+            const refinedContent = await refinePost(draftContent, data.topic, apiKey, data.experience);
 
             // 2-5. Voice Briefing (Radio Host) - Depends on Refined Content
             let audioUrl = null;

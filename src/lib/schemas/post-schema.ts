@@ -10,6 +10,7 @@ export const postSchema = z.object({
     length: z.enum(["short", "medium", "long"]),
     includeImage: z.boolean(),
     rivalUrl: z.string().optional(), // Competitor analysis URL
+    experience: z.string().optional(), // Personal experience/anecdote for E-E-A-T
 });
 
 

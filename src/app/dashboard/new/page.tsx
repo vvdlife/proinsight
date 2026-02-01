@@ -4,7 +4,7 @@
 import { generatePost } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
-import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -254,6 +254,35 @@ export default function NewPostPage() {
                                     </div>
                                 )}
                             </div>
+
+                            <FormField
+                                control={form.control}
+                                name="experience"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center gap-2 mb-1 mt-4">
+                                            <FormLabel className="flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100">
+                                                <Sparkles className="h-4 w-4 text-amber-500" />
+                                                나만의 경험/에피소드 (E-E-A-T)
+                                            </FormLabel>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold border border-amber-200">Recommended</span>
+                                        </div>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <textarea
+                                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-amber-50/50 dark:bg-amber-950/10 px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
+                                                    placeholder="이 주제와 관련된 당신만의 구체적인 경험, 성공/실패 사례, 혹은 독특한 인사이트를 적어주세요. AI가 이를 글에 자연스럽게 녹여냅니다."
+                                                    {...field}
+                                                />
+                                            </div>
+                                        </FormControl>
+                                        <FormDescription className="text-amber-600/80 dark:text-amber-400/80 text-xs">
+                                            * 구글 SEO(E-E-A-T) 점수를 높이기 위해 필수적입니다. AI가 흉내 낼 수 없는 '진짜 이야기'를 들려주세요.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <FormField
                                 control={form.control}

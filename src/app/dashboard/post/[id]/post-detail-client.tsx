@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Pencil, Save, X, Loader2, Download, Search, FileText, Printer, BarChart, Copy, RotateCcw, Sparkles, Share2 } from "lucide-react";
+import { ChevronLeft, Pencil, Save, X, Loader2, Download, Search, FileText, Printer, BarChart, Copy, RotateCcw, Sparkles } from "lucide-react";
 import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
 import { CopyButton } from "@/components/copy-button";
 import { useState, useTransition, useRef } from "react";
@@ -230,29 +230,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                             {/* WordPress Publish */}
                             <WordPressDialog post={{ ...initialPost, content }} />
 
-                            {/* Social Media Share */}
-                            <Sheet modal={false}>
-                                <SheetTrigger asChild>
-                                    <Button variant="outline" size="icon" title="소셜 미디어 홍보">
-                                        <Share2 className="h-4 w-4" />
-                                    </Button>
-                                </SheetTrigger>
-                                <SheetContent className="overflow-y-auto min-w-[400px]">
-                                    <SheetHeader>
-                                        <SheetTitle>소셜 미디어 홍보</SheetTitle>
-                                        <SheetDescription>
-                                            블로그 글을 바탕으로 인스타그램, 트위터, 링크드인에 올릴 홍보 콘텐츠를 생성합니다.
-                                        </SheetDescription>
-                                    </SheetHeader>
-                                    <SocialMediaDashboard
-                                        postId={initialPost.id}
-                                        postContent={content}
-                                        postTitle={initialPost.topic}
-                                        existingPosts={initialPost.socialPosts || []}
-                                    />
-                                </SheetContent>
-                            </Sheet>
-
                             {/* SEO Analyzer */}
                             <Sheet modal={false}>
                                 <SheetTrigger asChild>
@@ -382,6 +359,22 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* 3. OSMU & Social Dashboard (Wide Section) */}
+            <div className="mt-12 border-t pt-10 print:hidden">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold tracking-tight">OSMU Studio & Social Hub</h2>
+                    <p className="text-muted-foreground mt-1">
+                        작성된 콘텐츠를 다양한 포맷(카드뉴스, 이메일)으로 변환하고 소셜 미디어에 공유하세요.
+                    </p>
+                </div>
+                <SocialMediaDashboard
+                    postId={initialPost.id}
+                    postContent={content}
+                    postTitle={initialPost.topic}
+                    existingPosts={initialPost.socialPosts || []}
+                />
             </div>
         </div>
     );
