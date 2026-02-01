@@ -228,7 +228,7 @@ export default function NewPostPage() {
                                             <FormLabel>어조 (Tone)</FormLabel>
                                             <Select
                                                 onValueChange={field.onChange}
-                                                value={field.value}
+                                                value={field.value || ""}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
@@ -254,7 +254,7 @@ export default function NewPostPage() {
                                             <FormLabel>글 길이 (Length)</FormLabel>
                                             <Select
                                                 onValueChange={field.onChange}
-                                                value={field.value}
+                                                value={field.value || ""}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger>
