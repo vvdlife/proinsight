@@ -1,7 +1,7 @@
 // Path: src/app/dashboard/new/page.tsx
 "use client";
 
-import { generatePost, generatePostImage, generatePostAudio, refinePostAction } from "@/features/generator/actions/generate-post";
+import { generatePost, generatePostImage, generatePostAudio } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
 import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target, Sparkles } from "lucide-react";
@@ -40,21 +40,14 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
-type Status = "IDLE" | "SEARCHING" | "WRITING" | "REFINING" | "COMPLETED";
+type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
 
-// Vercel Hobby Limit is 60s max. We set it here to be explicit.
-// Note: This config works for Page routes. For Server Actions, it might need next.config.js or route segment config.
-// Since this is a client component page, this export might not affect Server Actions directly, 
-// but it documents the intent. The Server Actions should ideally have their own config if possible, 
-// but Next.js Server Actions inherit timeout from the route processing them or default configuration.
-// We relying on splitting tasks to stay under the limit.
 export const maxDuration = 60;
 
 export default function NewPostPage() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [status, setStatus] = useState<Status>("IDLE");
-    const [generatedContent, setGeneratedContent] = useState<string>("");
 
     // Rival Analysis State
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -69,11 +62,11 @@ export default function NewPostPage() {
             length: undefined,
             includeImage: false,
             rivalUrl: ""
+            // experience removed
         } as any,
     });
 
     function onSubmit(data: PostFormValues) {
-        setGeneratedContent("");
         setStatus("IDLE");
 
         startTransition(async () => {
@@ -88,7 +81,7 @@ export default function NewPostPage() {
                     return;
                 }
 
-                // Step 2: Text Generation
+                // Step 2: Text Generation (Unified)
                 setStatus("WRITING");
 
                 let finalContext = searchResult.context;
@@ -102,17 +95,14 @@ export default function NewPostPage() {
                     const postId = result.postId;
                     const content = result.content || "";
 
-                    toast.info("텍스트 생성 완료! 미디어(이미지/오디오)를 백그라운드에서 생성합니다... 🎨🎙️");
+                    toast.info("글 생성이 완료되었습니다! 미디어를 생성합니다... 🎨🎙️");
 
-                    // Step 3: Parallel Media Generation (Non-blocking)
-                    // We trigger these promises but do NOT await them blocking the UI transition too long.
-                    // However, we want to give feedback if they fail immediately.
-                    // Since we redirect, we should just fire them. The server actions are independent.
+                    // Step 3: Parallel Media Generation
 
                     if (data.includeImage) {
                         generatePostImage(postId, data.topic)
                             .then(res => {
-                                if (!res.success) toast.warning("이미지 생성 실패 (글은 저장됨)");
+                                if (!res.success) toast.warning("이미지 생성 실패");
                             })
                             .catch(e => console.error("Image gen error", e));
                     }
@@ -134,7 +124,7 @@ export default function NewPostPage() {
                     setStatus("IDLE");
                 }
             } catch (error) {
-                toast.error("알 수 없는 오류가 발생했습니다.");
+                toast.error("오류가 발생했습니다.");
                 setStatus("IDLE");
             }
         });
@@ -158,13 +148,12 @@ export default function NewPostPage() {
             const result = await analyzeRival(url, topic);
             if (result.success && result.data) {
                 setRivalAnalysis(result.data);
-                toast.success("분석 완료! 전략이 수립되었습니다.");
+                toast.success("분석 완료!");
 
-                // Add extracted keywords to the form if empty
                 const currentKeywords = form.getValues("keywords");
                 if (!currentKeywords && result.data.keywords) {
                     form.setValue("keywords", result.data.keywords.slice(0, 5).join(", "));
-                    toast.info("경쟁사 핵심 키워드가 자동 적용되었습니다.");
+                    toast.info("경쟁사 핵심 키워드가 적용되었습니다.");
                 }
             } else {
                 toast.error(`분석 실패: ${result.message}`);
@@ -282,34 +271,7 @@ export default function NewPostPage() {
                                 )}
                             </div>
 
-                            <FormField
-                                control={form.control}
-                                name="experience"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <div className="flex items-center gap-2 mb-1 mt-4">
-                                            <FormLabel className="flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100">
-                                                <Sparkles className="h-4 w-4 text-amber-500" />
-                                                나만의 경험/에피소드 (E-E-A-T)
-                                            </FormLabel>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold border border-amber-200">Recommended</span>
-                                        </div>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <textarea
-                                                    className="flex min-h-[100px] w-full rounded-md border border-input bg-amber-50/50 dark:bg-amber-950/10 px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y shadow-sm"
-                                                    placeholder="이 주제와 관련된 당신만의 구체적인 경험, 성공/실패 사례, 혹은 독특한 인사이트를 적어주세요. AI가 이를 글에 자연스럽게 녹여냅니다."
-                                                    {...field}
-                                                />
-                                            </div>
-                                        </FormControl>
-                                        <FormDescription className="text-amber-600/80 dark:text-amber-400/80 text-xs">
-                                            * 구글 SEO(E-E-A-T) 점수를 높이기 위해 필수적입니다. AI가 흉내 낼 수 없는 '진짜 이야기'를 들려주세요.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Experience Section Removed */}
 
                             <FormField
                                 control={form.control}
@@ -413,13 +375,7 @@ export default function NewPostPage() {
                                 {status === "WRITING" && (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        글을 작성하고 있습니다 (Drafting)...
-                                    </>
-                                )}
-                                {status === "REFINING" && (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        전문가 수준으로 다듬는 중입니다 (Refining)...
+                                        글을 작성하고 있습니다...
                                     </>
                                 )}
                                 {(status === "IDLE" || status === "COMPLETED") && "생성 시작"}

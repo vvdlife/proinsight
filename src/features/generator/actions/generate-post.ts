@@ -9,7 +9,6 @@ import { generateImagePrompt } from "@/lib/services/image-prompt";
 import { generateBlogImage } from "@/lib/services/image-gen";
 import { planSEOStrategy } from "@/lib/services/seo-planner";
 import { generateJSONLD } from "@/lib/services/ai";
-import { refinePost } from "@/lib/services/editor";
 import { generateVoiceScript } from "@/lib/services/voice-script";
 import { generateAudio } from "@/lib/services/tts";
 
@@ -21,14 +20,13 @@ export type GeneratePostResult = {
     errors?: Record<string, string[]>;
 };
 
-// Renamed logic internally, but kept function name for compatibility (Phase 1: Draft Only)
+// Simplified: No Refine, No Experience Injection
 export async function generatePost(data: PostFormValues, searchContext?: string): Promise<GeneratePostResult> {
     const { userId } = await auth();
     if (!userId) {
         return { success: false, message: "로그인이 필요합니다." };
     }
 
-    // BYOK: Fetch API Key
     const settings = await prisma.userSettings.findUnique({
         where: { userId },
         select: { apiKey: true },
@@ -39,36 +37,38 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
     }
     const apiKey = settings.apiKey;
 
-    // 1. Server-side validation
     const validation = postSchema.safeParse(data);
     if (!validation.success) {
         return { success: false, message: "유효성 검사 실패", errors: validation.error.flatten().fieldErrors };
     }
 
     try {
-        console.log("🚀 Starting Generation Pipeline (Phase 1: Draft Mode)...");
+        console.log("🚀 Starting Generation Pipeline (Unified Mode)...");
 
-        // 2-1. SEO Planning
+        // 1. SEO Planning
         console.log("🧠 [Phase 1] SEO Strategy Planning...");
         const seoStrategy = await planSEOStrategy(data.topic, apiKey);
 
-        // 2-2. Drafting (Writer) - FAST STEP
-        console.log("✍️ [Phase 2] Drafting content (Gemini Flash)...");
-        const draftContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
+        // 2. Writing (Drafting is now the final content)
+        console.log("✍️ [Phase 2] Writing content...");
+        // Note: data.experience is ignored/removed as per request
+        const content = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
-        // 2-3. SKIPPING Refine (Moved to Client-side Phase 2)
-        // We save the DRAFT content directly to keep this request under 10-20s.
+        // 3. Schema Generation
+        const schemaMarkup = generateJSONLD(seoStrategy, content);
 
-        // 3. Schema Generation (Based on Draft)
-        const schemaMarkup = generateJSONLD(seoStrategy, draftContent);
-
-        // 4. Save to Database (Status: DRAFT)
+        // 4. Save to Database
+        // We skip "Refining" so we mark it as COMPLETED (or DRAFT if checking is needed, but user wants simplicity)
+        // Let's stick to DRAFT so they can edit, or COMPLETED if it's "done". 
+        // Previously it was DRAFT -> Refine -> COMPLETED.
+        // Let's set it to PUBLISH_READY or just DRAFT. 
+        // Based on "Simplify", let's save as DRAFT but it's the "final AI output".
         const post = await prisma.post.create({
             data: {
                 topic: data.topic,
-                content: draftContent, // Saving DRAFT content first
+                content: content,
                 tone: data.tone,
-                status: "DRAFT", // Explicitly DRAFT
+                status: "DRAFT",
                 userId,
                 coverImage: null,
                 audioUrl: null,
@@ -78,50 +78,20 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
 
         return {
             success: true,
-            message: "초안이 작성되었습니다. 윤문(Refining) 단계를 시작합니다...",
+            message: "글 생성이 완료되었습니다.",
             postId: post.id,
-            content: draftContent,
+            content: content,
         };
     } catch (error) {
-        console.error("AI Draft Generation Error:", error);
+        console.error("AI Generation Error:", error);
         return {
             success: false,
-            message: error instanceof Error ? error.message : "초안 생성 중 오류 발생",
+            message: error instanceof Error ? error.message : "글 생성 중 오류 발생",
         };
     }
 }
 
-// Step 2: Refine Action (Called from Client)
-export async function refinePostAction(postId: string, draftContent: string, topic: string, experience?: string) {
-    const { userId } = await auth();
-    if (!userId) return { success: false, message: "Unauthorized" };
-
-    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
-    const apiKey = settings?.apiKey;
-    if (!apiKey) return { success: false, message: "API Key not found" };
-
-    try {
-        console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (Gemini 3 Pro)...");
-        // This is the heavy lifting step (20-30s)
-        const refinedContent = await refinePost(draftContent, topic, apiKey, experience);
-
-        // Update Post
-        await prisma.post.update({
-            where: { id: postId, userId },
-            data: {
-                content: refinedContent,
-                status: "COMPLETED" // Mark as refined
-            }
-        });
-
-        console.log("   ✅ Content Refined & Saved");
-        return { success: true, content: refinedContent };
-    } catch (e) {
-        console.error("   ❌ Refine Failed:", e);
-        return { success: false, message: "Refine failed" };
-    }
-}
-
+// Separate Action for Image (Kept for performance)
 export async function generatePostImage(postId: string, topic: string) {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
@@ -133,11 +103,9 @@ export async function generatePostImage(postId: string, topic: string) {
     try {
         console.log("🎨 [Separate Action] Designing cover image...");
         const imagePrompt = await generateImagePrompt(topic, apiKey);
-        console.log(`   📝 Image Prompt: ${imagePrompt}`);
         const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
 
         if (imageBase64) {
-            console.log("   ✅ Image Generated Successfully");
             await prisma.post.update({
                 where: { id: postId, userId },
                 data: { coverImage: imageBase64 }
@@ -151,6 +119,7 @@ export async function generatePostImage(postId: string, topic: string) {
     }
 }
 
+// Separate Action for Audio (Kept for performance)
 export async function generatePostAudio(postId: string, content: string) {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
@@ -162,11 +131,9 @@ export async function generatePostAudio(postId: string, content: string) {
     try {
         console.log("🎙️ [Separate Action] Recording Audio Briefing...");
         const script = await generateVoiceScript(content, apiKey);
-        console.log("   📜 Script Written (approx. words):", script.length);
-
         const audioLink = await generateAudio(script, Date.now().toString());
+
         if (audioLink) {
-            console.log("   ✅ Audio Briefing Recorded:", audioLink);
             await prisma.post.update({
                 where: { id: postId, userId },
                 data: { audioUrl: audioLink }
