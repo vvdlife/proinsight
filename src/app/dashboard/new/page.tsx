@@ -1,7 +1,7 @@
 // Path: src/app/dashboard/new/page.tsx
 "use client";
 
-import { generatePost, generatePostImage, generatePostAudio } from "@/features/generator/actions/generate-post";
+import { generatePost, generatePostImage, generatePostAudio, refinePostAction } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
 import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target, Sparkles } from "lucide-react";
@@ -40,7 +40,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
-type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
+type Status = "IDLE" | "SEARCHING" | "WRITING" | "REFINING" | "COMPLETED";
 
 // Vercel Hobby Limit is 60s max. We set it here to be explicit.
 // Note: This config works for Page routes. For Server Actions, it might need next.config.js or route segment config.
