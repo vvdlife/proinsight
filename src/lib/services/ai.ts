@@ -29,8 +29,8 @@ import { SEOStrategy } from "./seo-planner";
 
 // Phase 1: The Architect - Generates a logical outline
 async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<Outline> {
-    // User requested Gemini 3 Flash or Pro. Using "gemini-3-pro-preview" for maximum Quality.
-    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.2, "application/json");
+    // Reverting to gemini-1.5-flash for speed and stability (preventing 504)
+    const model = getGeminiModel(apiKey, "gemini-1.5-flash", 0.2, "application/json");
 
     const prompt = `
 You are a Senior Content Architect.
@@ -93,8 +93,8 @@ async function generateSection(
     searchContext: string | undefined,
     apiKey: string
 ): Promise<string> {
-    // Using gemini-3-pro-preview for high-quality writing
-    const model = getGeminiModel(apiKey, "gemini-3-pro-preview", 0.2);
+    // Reverting to gemini-1.5-flash for speed
+    const model = getGeminiModel(apiKey, "gemini-1.5-flash", 0.2);
 
     const prompt = `
 You are a Senior Technical Analyst. Write ONE section of a blog post.
