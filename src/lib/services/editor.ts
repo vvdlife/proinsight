@@ -3,9 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function refinePost(draft: string, topic: string, apiKey: string, experience?: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // User requested Gemini Pro (High Quality) for refining
+    // User requested Gemini 3 Pro (High Quality) for refining
     const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-pro", // High-end model for superior nuances
+        model: "gemini-3-pro-preview", // Latest experimental model
         generationConfig: { temperature: 0.2 }
     });
 
@@ -46,7 +46,7 @@ export async function refinePost(draft: string, topic: string, apiKey: string, e
     `;
 
     try {
-        console.log("🧐 Editor-in-Chief: Reviewing and polishing (Gemini 1.5 Pro)...");
+        console.log("🧐 Editor-in-Chief: Reviewing and polishing (Gemini 3 Pro)...");
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const refinedContent = response.text();
