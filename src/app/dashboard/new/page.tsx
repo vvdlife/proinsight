@@ -1,7 +1,7 @@
 // Path: src/app/dashboard/new/page.tsx
 "use client";
 
-import { generatePost, generatePostImage } from "@/features/generator/actions/generate-post";
+import { generatePost, generatePostImage, generatePostAudio } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
 import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target, Sparkles } from "lucide-react";
@@ -41,6 +41,14 @@ import { toast } from "sonner";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
 type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
+
+// Vercel Hobby Limit is 60s max. We set it here to be explicit.
+// Note: This config works for Page routes. For Server Actions, it might need next.config.js or route segment config.
+// Since this is a client component page, this export might not affect Server Actions directly, 
+// but it documents the intent. The Server Actions should ideally have their own config if possible, 
+// but Next.js Server Actions inherit timeout from the route processing them or default configuration.
+// We relying on splitting tasks to stay under the limit.
+export const maxDuration = 60;
 
 export default function NewPostPage() {
     const router = useRouter();
@@ -91,23 +99,33 @@ export default function NewPostPage() {
                 const result = await generatePost(data, finalContext);
 
                 if (result.success && result.postId) {
-                    // Step 3: Image Generation (Separate Request)
+                    const postId = result.postId;
+                    const content = result.content || "";
+
+                    toast.info("텍스트 생성 완료! 미디어(이미지/오디오)를 백그라운드에서 생성합니다... 🎨🎙️");
+
+                    // Step 3: Parallel Media Generation (Non-blocking)
+                    // We trigger these promises but do NOT await them blocking the UI transition too long.
+                    // However, we want to give feedback if they fail immediately.
+                    // Since we redirect, we should just fire them. The server actions are independent.
+
                     if (data.includeImage) {
-                        toast.info("텍스트 생성 완료! 이미지를 디자인하고 있습니다... 🎨");
-                        try {
-                            const imageResult = await generatePostImage(result.postId, data.topic);
-                            if (imageResult.success) {
-                                toast.success("이미지 생성 완료!");
-                            } else {
-                                toast.warning("이미지 생성 실패 (글은 저장됨)");
-                            }
-                        } catch (imgError) {
-                            console.error(imgError);
-                            toast.warning("이미지 생성 중 오류 발생");
-                        }
+                        generatePostImage(postId, data.topic)
+                            .then(res => {
+                                if (!res.success) toast.warning("이미지 생성 실패 (글은 저장됨)");
+                            })
+                            .catch(e => console.error("Image gen error", e));
                     }
 
-                    toast.success("모든 작업 완료! 상세 페이지로 이동합니다.");
+                    if (content.length > 50) {
+                        generatePostAudio(postId, content)
+                            .then(res => {
+                                if (!res.success) toast.warning("오디오 생성 실패");
+                            })
+                            .catch(e => console.error("Audio gen error", e));
+                    }
+
+                    toast.success("상세 페이지로 이동합니다.");
                     router.push(`/dashboard/post/${result.postId}`);
                 } else {
                     toast.error("생성 실패", {

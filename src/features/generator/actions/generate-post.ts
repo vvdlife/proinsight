@@ -71,23 +71,9 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
         const refinedContent = await refinePost(draftContent, data.topic, apiKey, data.experience);
 
-        // 2-5. Voice Briefing (Radio Host) - Depends on Refined Content
-        let audioUrl = null;
-        try {
-            console.log("🎙️ [Phase 5] Recording Audio Briefing...");
-            // Generate Script
-            const script = await generateVoiceScript(refinedContent, apiKey);
-            console.log("   📜 Script Written (approx. words):", script.length);
-
-            // Generate Audio (TTS)
-            const audioLink = await generateAudio(script, Date.now().toString());
-            if (audioLink) {
-                console.log("   ✅ Audio Briefing Recorded:", audioLink);
-                audioUrl = audioLink;
-            }
-        } catch (e) {
-            console.error("   ❌ Voice Generation Failed (Skipping):", e);
-        }
+        // 2-5. Voice Briefing (Radio Host) - Moved to separate action
+        // Audio generation is now handled by client-side call to prevent timeout
+        const audioUrl = null;
 
         // 3. Schema Generation
         const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
@@ -108,7 +94,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
 
         return {
             success: true,
-            message: "텍스트 생성이 완료되었습니다. 이미지를 생성합니다...",
+            message: "텍스트 생성이 완료되었습니다. 미디어(이미지/오디오)를 생성합니다...",
             postId: post.id,
             content: refinedContent,
         };
@@ -153,5 +139,43 @@ export async function generatePostImage(postId: string, topic: string) {
     } catch (e) {
         console.error("   ❌ Image Generation Failed:", e);
         return { success: false, message: "Image generation failed" };
+    }
+}
+
+export async function generatePostAudio(postId: string, content: string) {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "Unauthorized" };
+
+    const settings = await prisma.userSettings.findUnique({
+        where: { userId },
+        select: { apiKey: true },
+    });
+    const apiKey = settings?.apiKey;
+    if (!apiKey) return { success: false, message: "API Key not found" };
+
+    try {
+        console.log("🎙️ [Separate Action] Recording Audio Briefing...");
+        // Generate Script
+        const script = await generateVoiceScript(content, apiKey);
+        console.log("   📜 Script Written (approx. words):", script.length);
+
+        // Generate Audio (TTS)
+        const audioLink = await generateAudio(script, Date.now().toString());
+
+        if (audioLink) {
+            console.log("   ✅ Audio Briefing Recorded:", audioLink);
+
+            // Update Post with Audio
+            await prisma.post.update({
+                where: { id: postId, userId },
+                data: { audioUrl: audioLink }
+            });
+
+            return { success: true, audioUrl: audioLink };
+        }
+        return { success: false, message: "Audio generation returned null" };
+    } catch (e) {
+        console.error("   ❌ Voice Generation Failed:", e);
+        return { success: false, message: "Voice generation failed" };
     }
 }
