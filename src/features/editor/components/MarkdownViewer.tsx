@@ -557,12 +557,15 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
 
                     // 5. Code -> Syntax Highlighting or Mermaid
                     code: ({ node, inline, className, children, ...props }: any) => {
+                        const content = String(children).replace(/\n$/, "");
+                        if (!content || content === "undefined") return null;
+
                         const match = /language-(\w+)/.exec(className || "");
                         const lang = match ? match[1] : "";
                         const isMermaid = lang === "mermaid";
 
                         if (!inline && isMermaid) {
-                            return <Mermaid chart={String(children).replace(/\n$/, "")} />;
+                            return <Mermaid chart={content} />;
                         }
 
                         if (!inline && match) {
@@ -578,7 +581,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                                         customStyle={{ margin: 0, borderRadius: 0 }}
                                         {...props}
                                     >
-                                        {String(children).replace(/\n$/, "")}
+                                        {content}
                                     </SyntaxHighlighter>
                                 </div>
                             );
