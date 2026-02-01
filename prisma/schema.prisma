@@ -17,6 +17,7 @@ model Post {
   content   String
   tone      String
   coverImage String? // Base64 encoded image
+  audioUrl   String? // URL to the voice briefing MP3
   schemaMarkup String? // JSON-LD schema for SEO
   userId    String
   status    String   @default("DRAFT")

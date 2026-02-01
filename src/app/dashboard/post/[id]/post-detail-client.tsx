@@ -39,6 +39,7 @@ import { SeoAnalysisPanel } from "@/features/post/components/SeoAnalysisPanel";
 import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDashboard";
 import { ReadingProgressBar } from "@/features/post/components/ReadingProgressBar";
 import { TableOfContents } from "@/features/post/components/TableOfContents";
+import { AudioPlayer } from "@/features/post/components/AudioPlayer";
 
 
 // Dynamic import for MDXEditor to avoid SSR issues
@@ -246,6 +247,7 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                                     <SocialMediaDashboard
                                         postId={initialPost.id}
                                         postContent={content}
+                                        postTitle={initialPost.topic}
                                         existingPosts={initialPost.socialPosts || []}
                                     />
                                 </SheetContent>
@@ -357,6 +359,13 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                             {!isEditing && <div className="print:hidden"><CopyButton content={content} /></div>}
                         </div>
                     </div>
+
+                    {/* Audio Briefing Player */}
+                    {initialPost.audioUrl && (
+                        <div className="print:hidden animate-in fade-in slide-in-from-top-4">
+                            <AudioPlayer src={initialPost.audioUrl} />
+                        </div>
+                    )}
                 </div>
 
                 {/* Content Area */}

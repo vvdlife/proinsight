@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Copy, Instagram, Linkedin, Twitter, Download, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, Copy, Instagram, Linkedin, Twitter, Download, RefreshCw, Layers, Mail, ExternalLink } from "lucide-react";
 import { generateAndSaveSocialPosts } from "@/features/post/actions/generate-social-v2";
 import { Badge } from "@/components/ui/badge";
+import { CardGenerator } from "@/features/osmu/components/CardGenerator";
 
 export type SocialPostData = {
     id: string;
@@ -19,10 +20,11 @@ export type SocialPostData = {
 interface SocialMediaDashboardProps {
     postId: string;
     postContent: string;
+    postTitle: string;
     existingPosts: SocialPostData[];
 }
 
-export function SocialMediaDashboard({ postId, postContent, existingPosts }: SocialMediaDashboardProps) {
+export function SocialMediaDashboard({ postId, postContent, postTitle, existingPosts }: SocialMediaDashboardProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     // Optimistic UI could be used, but for now we rely on revalidation or local state update
     // Since revalidatePath is called in action, the parent server component should refresh
@@ -139,6 +141,48 @@ export function SocialMediaDashboard({ postId, postContent, existingPosts }: Soc
                     </TabsContent>
                 ))}
             </Tabs>
+
+            {/* OSMU Section */}
+            <div className="pt-6 border-t">
+                <h3 className="font-semibold flex items-center gap-2 mb-4">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    OSMU Engine (Visuals & Email)
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Card News Generator */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Layers className="h-4 w-4" />
+                            Instagram Card News
+                        </div>
+                        <CardGenerator
+                            title={postTitle}
+                            summary={postContent.substring(0, 150) + "..."}
+                        />
+                    </div>
+
+                    {/* Newsletter & Email */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <Mail className="h-4 w-4" />
+                            Email Newsletter
+                        </div>
+                        <div className="border rounded-xl bg-zinc-50 dark:bg-zinc-900 p-6 flex flex-col items-center justify-center gap-4 text-center h-[200px]">
+                            <p className="text-sm text-muted-foreground">
+                                이메일 발송에 최적화된<br />HTML 템플릿을 확인하세요.
+                            </p>
+                            <Button variant="outline" className="gap-2" onClick={() => window.open(`/newsletter/${postId}`, '_blank')}>
+                                <ExternalLink className="h-4 w-4" />
+                                뉴스레터 미리보기 & 복사
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

@@ -3,7 +3,8 @@
 
 import { generatePost } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
-import { Loader2 } from "lucide-react";
+import { analyzeRival, AnalyzeRivalResult } from "@/features/generator/actions/analyze-rival";
+import { Loader2, AlertCircle, CheckCircle2, Globe, Lightbulb, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -37,7 +38,6 @@ import { PostFormValues, postSchema } from "@/lib/schemas/post-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
 type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
@@ -50,6 +50,10 @@ export default function NewPostPage() {
     const [status, setStatus] = useState<Status>("IDLE");
     const [generatedContent, setGeneratedContent] = useState<string>("");
 
+    // Rival Analysis State
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [rivalAnalysis, setRivalAnalysis] = useState<AnalyzeRivalResult["data"] | null>(null);
+
     const form = useForm<PostFormValues>({
         resolver: zodResolver(postSchema),
         defaultValues: {
@@ -58,6 +62,7 @@ export default function NewPostPage() {
             tone: undefined,
             length: undefined,
             includeImage: false,
+            rivalUrl: ""
         } as any,
     });
 
@@ -79,7 +84,17 @@ export default function NewPostPage() {
 
                 // 2. Writing Phase (Fact Checking & Generation)
                 setStatus("WRITING");
-                const result = await generatePost(data, searchResult.context);
+
+                // If we have rival analysis, we could implicitly pass it via context or separate generic param
+                // For now, we assume generatePost might use the context, or we just rely on the user manually applying insights.
+                // However, to make it truly effective, we can append the rival strategy to the prompt context.
+                // Let's modify the context slightly if we have rival analysis data.
+                let finalContext = searchResult.context;
+                if (rivalAnalysis) {
+                    finalContext += `\n\n[COMPETITOR ANALYSIS]\nStrategy: ${rivalAnalysis.strategy}\nWeaknesses: ${rivalAnalysis.weaknesses.join(", ")}\nSuggested Structure: ${rivalAnalysis.structure.join(", ")}`;
+                }
+
+                const result = await generatePost(data, finalContext);
 
                 if (result.success && result.postId) {
                     toast.success("생성 완료! 상세 페이지로 이동합니다.");
@@ -97,6 +112,42 @@ export default function NewPostPage() {
             }
         });
     }
+
+    const handleAnalyzeRival = async () => {
+        const url = form.getValues("rivalUrl");
+        const topic = form.getValues("topic");
+
+        if (!url) {
+            toast.error("경쟁사 URL을 입력해주세요.");
+            return;
+        }
+        if (!topic) {
+            toast.error("먼저 주제를 입력해주세요.");
+            return;
+        }
+
+        setIsAnalyzing(true);
+        try {
+            const result = await analyzeRival(url, topic);
+            if (result.success && result.data) {
+                setRivalAnalysis(result.data);
+                toast.success("분석 완료! 전략이 수립되었습니다.");
+
+                // Add extracted keywords to the form if empty
+                const currentKeywords = form.getValues("keywords");
+                if (!currentKeywords && result.data.keywords) {
+                    form.setValue("keywords", result.data.keywords.slice(0, 5).join(", "));
+                    toast.info("경쟁사 핵심 키워드가 자동 적용되었습니다.");
+                }
+            } else {
+                toast.error(`분석 실패: ${result.message}`);
+            }
+        } catch (e) {
+            toast.error("분석 중 오류 발생");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     return (
         <div className="flex flex-col items-center justify-center p-4 gap-8">
@@ -134,6 +185,75 @@ export default function NewPostPage() {
                                     </FormItem>
                                 )}
                             />
+
+                            {/* Rival Analysis Section */}
+                            <div className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="rivalUrl"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <Target className="h-4 w-4 text-rose-500" />
+                                                경쟁사/참고 URL 분석 (Anti-Rival)
+                                            </FormLabel>
+                                            <div className="flex gap-2">
+                                                <FormControl>
+                                                    <Input placeholder="https://competitor-blog.com/post-123" {...field} />
+                                                </FormControl>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    onClick={handleAnalyzeRival}
+                                                    disabled={isAnalyzing}
+                                                >
+                                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : "분석하기"}
+                                                </Button>
+                                            </div>
+                                            <FormDescription>
+                                                경쟁 글을 분석하여 더 나은 글을 쓰기 위한 전략과 키워드를 추출합니다.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Analysis Result Display */}
+                                {rivalAnalysis && (
+                                    <div className="rounded-lg border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-start gap-3">
+                                            <Lightbulb className="h-5 w-5 text-rose-600 mt-1 shrink-0" />
+                                            <div className="space-y-2">
+                                                <h4 className="font-semibold text-rose-700 dark:text-rose-400">
+                                                    승리 전략 (Winning Strategy)
+                                                </h4>
+                                                <p className="text-sm text-foreground/90 leading-relaxed font-medium">
+                                                    "{rivalAnalysis.strategy}"
+                                                </p>
+
+                                                <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <span className="font-bold text-rose-600 block mb-1">약점 공략 (Weaknesses)</span>
+                                                        <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                                                            {rivalAnalysis.weaknesses.map((w, i) => (
+                                                                <li key={i}>{w}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-bold text-rose-600 block mb-1">추천 구조 (Structure)</span>
+                                                        <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                                                            {rivalAnalysis.structure.slice(0, 3).map((s, i) => (
+                                                                <li key={i}>{s}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <FormField
                                 control={form.control}

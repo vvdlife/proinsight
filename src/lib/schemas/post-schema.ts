@@ -9,6 +9,8 @@ export const postSchema = z.object({
     tone: z.enum(["professional", "friendly", "witty"]),
     length: z.enum(["short", "medium", "long"]),
     includeImage: z.boolean(),
+    rivalUrl: z.string().optional(), // Competitor analysis URL
 });
+
 
 export type PostFormValues = z.infer<typeof postSchema>;

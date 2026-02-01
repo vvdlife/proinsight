@@ -9,6 +9,8 @@ import { generateBlogImage } from "@/lib/services/image-gen";
 import { planSEOStrategy } from "@/lib/services/seo-planner";
 import { generateJSONLD } from "@/lib/services/ai";
 import { refinePost } from "@/lib/services/editor";
+import { generateVoiceScript } from "@/lib/services/voice-script";
+import { generateAudio } from "@/lib/services/tts";
 
 export type GeneratePostResult = {
     success: boolean;
@@ -88,6 +90,25 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
             }
         }
 
+        // 2-5. Voice Briefing (Radio Host)
+        let audioUrl = null;
+        try {
+            console.log("🎙️ [Phase 5] Recording Audio Briefing...");
+            // Generate Script
+            const script = await generateVoiceScript(refinedContent, apiKey);
+            console.log("   📜 Script Written (approx. words):", script.length);
+
+            // Generate Audio (TTS)
+            // Use timestamp as temporary ID for filename
+            const audioLink = await generateAudio(script, Date.now().toString());
+            if (audioLink) {
+                console.log("   ✅ Audio Briefing Recorded:", audioLink);
+                audioUrl = audioLink;
+            }
+        } catch (e) {
+            console.error("   ❌ Voice Generation Failed (Skipping):", e);
+        }
+
         // 3. Schema Generation
         const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
 
@@ -106,6 +127,7 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
                 status: "DRAFT",
                 userId,
                 coverImage: coverImageUrl,
+                audioUrl: audioUrl,
                 schemaMarkup: schemaMarkup,
             },
         });
