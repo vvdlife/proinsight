@@ -62,7 +62,7 @@ export default function NewPostPage() {
             length: undefined,
             includeImage: true,
             // rivalUrl removed
-            model: "gemini-1.5-flash",
+            model: "gemini-2.0-flash-exp",
         },
     });
 
@@ -310,9 +310,9 @@ export default function NewPostPage() {
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="gemini-1.5-flash">
-                                                    <span className="font-medium">⚡ Gemini 1.5 Flash</span>
-                                                    <span className="text-xs text-muted-foreground ml-2">(빠름 / 안정적)</span>
+                                                <SelectItem value="gemini-2.0-flash-exp">
+                                                    <span className="font-medium">⚡ Gemini 3 Flash (2.0 Exp)</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">(최신 / 초고속)</span>
                                                 </SelectItem>
                                                 <SelectItem value="gemini-3-pro-preview">
                                                     <span className="font-medium">🧠 Gemini 3 Pro</span>
