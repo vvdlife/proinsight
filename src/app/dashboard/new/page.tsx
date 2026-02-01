@@ -1,11 +1,12 @@
 // Path: src/app/dashboard/new/page.tsx
 "use client";
 
-import { generatePost, generatePostImage } from "@/features/generator/actions/generate-post";
+import { generatePostStep1Outline, generatePostStep2Section, generatePostStep3Finalize, generatePostImage } from "@/features/generator/actions/generate-post";
 import { searchTopic } from "@/features/generator/actions/search-topic";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Progress } from "@/components/ui/progress";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +40,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 
-type Status = "IDLE" | "SEARCHING" | "WRITING" | "COMPLETED";
+type Status = "IDLE" | "SEARCHING" | "PLANNING" | "WRITING" | "SAVING" | "COMPLETED";
 
 export const maxDuration = 60;
 
@@ -47,11 +48,13 @@ export default function NewPostPage() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [status, setStatus] = useState<Status>("IDLE");
+    const [progress, setProgress] = useState(0);
+    const [progressMessage, setProgressMessage] = useState("");
 
     // Rival Analysis Removed
 
     const form = useForm<PostFormValues>({
-        resolver: zodResolver(postSchema),
+        resolver: zodResolver(postSchema) as any, // Cast to any to avoid strict type mismatch with RHF
         defaultValues: {
             topic: "",
             keywords: "",
@@ -59,16 +62,22 @@ export default function NewPostPage() {
             length: undefined,
             includeImage: false,
             // rivalUrl removed
-        } as any,
+            model: "gemini-1.5-flash",
+        },
     });
 
-    function onSubmit(data: PostFormValues) {
+    const onSubmit: import("react-hook-form").SubmitHandler<PostFormValues> = (data) => {
         setStatus("IDLE");
+        setProgress(0);
+        setProgressMessage("");
 
         startTransition(async () => {
             try {
                 // Step 1: Search
                 setStatus("SEARCHING");
+                setProgress(10);
+                setProgressMessage("최신 트렌드와 정보를 분석하고 있습니다...");
+
                 const searchResult = await searchTopic(data.topic);
 
                 if (!searchResult.success) {
@@ -76,39 +85,77 @@ export default function NewPostPage() {
                     setStatus("IDLE");
                     return;
                 }
-
-                // Step 2: Text Generation
-                setStatus("WRITING");
-
                 const finalContext = searchResult.context;
-                // Rival analysis logic removed
 
-                const result = await generatePost(data, finalContext);
+                // Step 2: Outline
+                setStatus("PLANNING");
+                setProgress(30);
+                setProgressMessage("블로그 글의 목차와 전략을 수립하고 있습니다...");
 
-                if (result.success && result.postId) {
-                    const postId = result.postId;
+                const outlineResult = await generatePostStep1Outline(data, finalContext);
+                if (!outlineResult.success || !outlineResult.outline) {
+                    toast.error("목차 생성 실패: " + outlineResult.message);
+                    setStatus("IDLE");
+                    return;
+                }
+                const outline = outlineResult.outline;
 
-                    toast.info("글 생성이 완료되었습니다! 이미지를 생성합니다... 🎨");
+                // Step 3: Write Sections (Client-Side Orchestration)
+                setStatus("WRITING");
+                const sectionContents: string[] = [];
+                const totalSections = outline.sections.length;
 
-                    // Step 3: Image Generation (Only Image now)
+                // Sequential or Paralllel? 
+                // To safely avoid 504 on Client-Side (Next.js limits), sequential or small batches is safest for the overall process,
+                // BUT browsers have no timeouts for fetch usually, Vercel Server Actions DO have 60s limit *per request*.
+                // So calling multiple server actions in parallel is fine as long as EACH action < 60s.
+                // However, too many parallel requests might hit AI rate limits.
+                // Pro model is slow. Let's do strictly sequential for Pro, batch 2 for Flash.
+                // For simplicity and safety (as requested "Zero-Timeout"), let's do SEQUENTIAL. 
+                // It ensures we never hit rate limits and users see steady progress.
+
+                for (let i = 0; i < totalSections; i++) {
+                    const section = outline.sections[i];
+                    const progressPercent = 30 + Math.floor(((i) / totalSections) * 50); // 30% -> 80%
+                    setProgress(progressPercent);
+                    setProgressMessage(`섹션 ${i + 1}/${totalSections} 작성 중: ${section.heading}`);
+
+                    const sectionResult = await generatePostStep2Section(data, section, finalContext, data.model);
+                    if (!sectionResult.success || !sectionResult.content) {
+                        // Fallback for failed section
+                        sectionContents.push(`## ${section.heading}\n\n(작성 실패: ${sectionResult.message})`);
+                    } else {
+                        sectionContents.push(sectionResult.content!);
+                    }
+                }
+
+                // Step 4: Finalize
+                setStatus("SAVING");
+                setProgress(90);
+                setProgressMessage("전체 내용을 조립하고 저장하고 있습니다...");
+
+                const postResult = await generatePostStep3Finalize(data, outline, sectionContents, outlineResult.seoStrategy, finalContext);
+
+                if (postResult.success && postResult.postId) {
+                    setProgress(100);
+                    setProgressMessage("완료! 이미지를 생성하고 이동합니다...");
+
+                    const postId = postResult.postId;
+
+                    // Step 5: Image Generation (Background)
                     if (data.includeImage) {
-                        generatePostImage(postId, data.topic)
-                            .then(res => {
-                                if (!res.success) toast.warning("이미지 생성 실패");
-                            })
-                            .catch(e => console.error("Image gen error", e));
+                        generatePostImage(postId, data.topic).catch(console.error);
                     }
 
-                    toast.success("상세 페이지로 이동합니다.");
-                    router.push(`/dashboard/post/${result.postId}`);
+                    toast.success("글 생성이 완료되었습니다!");
+                    router.push(`/dashboard/post/${postResult.postId}`);
                 } else {
-                    toast.error("생성 실패", {
-                        description: result.message,
-                    });
-                    setStatus("IDLE");
+                    throw new Error(postResult.message);
                 }
-            } catch (error) {
-                toast.error("오류가 발생했습니다.");
+
+            } catch (error: any) {
+                console.error(error);
+                toast.error("오류가 발생했습니다: " + error.message);
                 setStatus("IDLE");
             }
         });
@@ -245,21 +292,65 @@ export default function NewPostPage() {
                                 )}
                             />
 
-                            <Button type="submit" className="w-full" size="lg" disabled={isPending || status !== "IDLE"}>
-                                {status === "SEARCHING" && (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        최신 정보를 검색 중입니다 (Deep Research)...
-                                    </>
+                            <FormField
+                                control={form.control}
+                                name="model"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>AI 모델 설정 (Model)</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="모델 선택" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="gemini-1.5-flash">
+                                                    <span className="font-medium">⚡ Gemini 1.5 Flash</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">(빠름 / 안정적)</span>
+                                                </SelectItem>
+                                                <SelectItem value="gemini-3-pro-preview">
+                                                    <span className="font-medium">🧠 Gemini 3 Pro</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">(고지능 / 느림)</span>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormDescription>
+                                            Pro 모델은 품질이 높지만 60초 이상 소요될 수 있습니다.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
-                                {status === "WRITING" && (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        글을 작성하고 있습니다...
-                                    </>
+                            />
+
+                            <div className="space-y-4">
+                                {status !== "IDLE" && status !== "COMPLETED" && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm font-medium text-muted-foreground">
+                                            <span>{progressMessage}</span>
+                                            <span>{progress}%</span>
+                                        </div>
+                                        <Progress value={progress} className="h-2" />
+                                    </div>
                                 )}
-                                {(status === "IDLE" || status === "COMPLETED") && "생성 시작"}
-                            </Button>
+
+                                <Button type="submit" className="w-full" size="lg" disabled={isPending || status !== "IDLE"}>
+                                    {status !== "IDLE" ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {status === "SEARCHING" ? "정보 검색 중..." :
+                                                status === "PLANNING" ? "목차 생성 중..." :
+                                                    status === "WRITING" ? "본문 작성 중..." :
+                                                        status === "SAVING" ? "저장 중..." : "처리 중..."}
+                                        </>
+                                    ) : (
+                                        "생성 시작"
+                                    )}
+                                </Button>
+                            </div>
                         </form>
                     </Form>
                 </CardContent>

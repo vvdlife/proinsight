@@ -48,8 +48,8 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
         const seoStrategy = await planSEOStrategy(data.topic, apiKey);
 
         // 2. Writing (Drafting is now the final content)
-        console.log("✍️ [Phase 2] Writing content...");
-        const content = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
+        console.log(`✍️ [Phase 2] Writing content using ${data.model || "default"}...`);
+        const content = await generateBlogPost(data, searchContext, apiKey, seoStrategy, data.model);
 
         // 3. Schema Generation
         const schemaMarkup = generateJSONLD(seoStrategy, content);
@@ -63,7 +63,6 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
                 status: "DRAFT",
                 userId,
                 coverImage: null,
-                audioUrl: null, // Always null as audio feature is removed
                 schemaMarkup: schemaMarkup,
             },
         });
@@ -108,5 +107,112 @@ export async function generatePostImage(postId: string, topic: string) {
     } catch (e) {
         console.error("   ❌ Image Generation Failed:", e);
         return { success: false, message: "Image generation failed" };
+    }
+}
+
+// --- Zero-Timeout Architecture Actions ---
+
+import { generateOutline, generateSection, Outline } from "@/lib/services/ai";
+
+export async function generatePostStep1Outline(data: PostFormValues, searchContext?: string): Promise<{ success: boolean; outline?: Outline; seoStrategy?: any; message?: string }> {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "Unauthorized" };
+
+    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
+    if (!settings?.apiKey) return { success: false, message: "API Key not found" };
+
+    try {
+        console.log("🧠 [Step 1] SEO Strategy & Outline...");
+        const seoStrategy = await planSEOStrategy(data.topic, settings.apiKey);
+
+        // Use selected model for outline
+        // Note: generateOutline is now exported from ai.ts
+        const outline = await generateOutline(data, searchContext, settings.apiKey, data.model, seoStrategy);
+
+        return { success: true, outline, seoStrategy };
+    } catch (e: any) {
+        console.error("Step 1 Failed:", e);
+        return { success: false, message: e.message || "Outline generation failed" };
+    }
+}
+
+export async function generatePostStep2Section(
+    data: PostFormValues,
+    section: any,
+    searchContext: string | undefined,
+    model: string
+): Promise<{ success: boolean; content?: string; message?: string }> {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "Unauthorized" };
+
+    const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { apiKey: true } });
+    if (!settings?.apiKey) return { success: false, message: "API Key not found" };
+
+    try {
+        console.log(`✍️ [Step 2] Writing Section: ${section.heading}`);
+        const content = await generateSection(data, section, searchContext, settings.apiKey, model);
+        return { success: true, content };
+    } catch (e: any) {
+        console.error(`Step 2 Failed (${section.heading}):`, e);
+        return { success: false, message: e.message || "Section generation failed" };
+    }
+}
+
+export async function generatePostStep3Finalize(
+    data: PostFormValues,
+    outline: Outline,
+    sectionContents: string[],
+    seoStrategy: any,
+    searchContext?: string
+): Promise<GeneratePostResult> {
+    const { userId } = await auth();
+    if (!userId) return { success: false, message: "Unauthorized" };
+
+    // Validate inputs
+    if (sectionContents.length !== outline.sections.length) {
+        return { success: false, message: "Mismatch between outline sections and generated contents." };
+    }
+
+    try {
+        console.log("🧩 [Step 3] Assembling & Saving...");
+
+        // Assemble content locally (Replicating generateBlogPost logic)
+        const referenceMatch = searchContext?.matchAll(/\[(\d+)\] Title: (.*?)\nURL: (.*?)\n/g);
+        let referencesSection = "\n\n## References\n";
+        if (referenceMatch) {
+            for (const match of referenceMatch) {
+                referencesSection += `[${match[1]}] ${match[2]}: ${match[3]}\n\n`;
+            }
+        } else {
+            referencesSection += "No references detected from search context.\n";
+        }
+
+        const finalContent = `
+# ${outline.title}
+
+${sectionContents.join("\n\n")}
+
+${referencesSection}
+`;
+
+        const schemaMarkup = generateJSONLD(seoStrategy, finalContent);
+
+        const post = await prisma.post.create({
+            data: {
+                topic: data.topic,
+                content: finalContent,
+                tone: data.tone,
+                status: "DRAFT",
+                userId,
+                coverImage: null,
+                schemaMarkup: schemaMarkup,
+            },
+        });
+
+        return { success: true, postId: post.id, content: finalContent, message: "글 생성이 완료되었습니다." };
+
+    } catch (e: any) {
+        console.error("Step 3 Failed:", e);
+        return { success: false, message: e.message || "Finalization failed" };
     }
 }

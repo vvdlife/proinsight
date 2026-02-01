@@ -15,12 +15,12 @@ function getGeminiModel(apiKey: string, modelName: string, temperature: number =
 }
 
 // Output structure for Phase 1: Engineer
-interface OutlineSection {
+export interface OutlineSection {
     heading: string;
     key_points: string[];
 }
 
-interface Outline {
+export interface Outline {
     title: string;
     sections: OutlineSection[];
 }
@@ -28,9 +28,9 @@ interface Outline {
 import { SEOStrategy } from "./seo-planner";
 
 // Phase 1: The Architect - Generates a logical outline
-async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<Outline> {
-    // Reverting to gemini-1.5-flash for speed and stability (preventing 504)
-    const model = getGeminiModel(apiKey, "gemini-1.5-flash", 0.2, "application/json");
+export async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, selectedModel: string, seoStrategy?: SEOStrategy): Promise<Outline> {
+    // Use selected model
+    const model = getGeminiModel(apiKey, selectedModel, 0.2, "application/json");
 
     const prompt = `
 You are a Senior Content Architect.
@@ -43,7 +43,7 @@ Length: ${data.length}
 
 search_context:
 """
-${searchContext || "No search context provided."}
+ ${searchContext || "No search context provided."}
 """
 
 INSTRUCTIONS:
@@ -87,14 +87,15 @@ INSTRUCTIONS:
 }
 
 // Phase 2: The Writer - Writes a specific section
-async function generateSection(
+export async function generateSection(
     data: PostFormValues,
     section: OutlineSection,
     searchContext: string | undefined,
-    apiKey: string
+    apiKey: string,
+    selectedModel: string
 ): Promise<string> {
-    // Reverting to gemini-1.5-flash for speed
-    const model = getGeminiModel(apiKey, "gemini-1.5-flash", 0.2);
+    // Use selected model
+    const model = getGeminiModel(apiKey, selectedModel, 0.2);
 
     const prompt = `
 You are a Senior Technical Analyst. Write ONE section of a blog post.
@@ -167,17 +168,21 @@ STRICT INSTRUCTIONS:
 }
 
 // Phase 3: The Assembly - Orchestrates the pipeline
-export async function generateBlogPost(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy): Promise<string> {
+export async function generateBlogPost(data: PostFormValues, searchContext: string | undefined, apiKey: string, seoStrategy?: SEOStrategy, selectedModel: string = "gemini-1.5-flash"): Promise<string> {
     console.log("🚀 [Phase 1] Architect: Designing Outline...");
-    const outline = await generateOutline(data, searchContext, apiKey, seoStrategy);
+    const outline = await generateOutline(data, searchContext, apiKey, selectedModel, seoStrategy);
     console.log(`📋 Outline Generated: ${outline.title} (${outline.sections.length} sections)`);
 
-    console.log("✍️ [Phase 2] Writer: Writing sections with Bounded Concurrency (Limit: 2)...");
+    // Determine Concurrency Limit based on Model
+    // Flash models are faster and have higher rate limits, so we can increase concurrency.
+    // Pro models are slower and stricter, so we reduce concurrency to avoid timeouts/errors.
+    const isFlash = selectedModel.includes("flash");
+    const CONCURRENCY_LIMIT = isFlash ? 3 : 2;
 
-    // Bounded Parallelism (Batch Size: 2)
-    // This provides a balance between speed and stability (Rate Limits)
+    console.log(`✍️ [Phase 2] Writer: Writing sections with Bounded Concurrency (Limit: ${CONCURRENCY_LIMIT}, Model: ${selectedModel})...`);
+
+    // Bounded Parallelism
     const sectionContents: string[] = new Array(outline.sections.length).fill("");
-    const CONCURRENCY_LIMIT = 2;
 
     for (let i = 0; i < outline.sections.length; i += CONCURRENCY_LIMIT) {
         const batch = outline.sections.slice(i, i + CONCURRENCY_LIMIT);
@@ -187,7 +192,7 @@ export async function generateBlogPost(data: PostFormValues, searchContext: stri
             const globalIndex = i + batchIndex;
             console.log(`   ⏳ Writing Section ${globalIndex + 1}/${outline.sections.length}: ${section.heading}...`);
             try {
-                const content = await generateSection(data, section, searchContext, apiKey);
+                const content = await generateSection(data, section, searchContext, apiKey, selectedModel);
                 sectionContents[globalIndex] = content;
                 console.log(`   ✅ Section ${globalIndex + 1} Done.`);
             } catch (error) {
