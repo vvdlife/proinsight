@@ -56,11 +56,13 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
                     <style>
                         #${uniqueId} .nodeLabel, #${uniqueId} .edgeLabel, #${uniqueId} .label, #${uniqueId} .node text, #${uniqueId} .node div, #${uniqueId} .node span, #${uniqueId} .node p {
                             font-family: 'Pretendard', sans-serif !important;
-                            font-size: 14px !important; /* Slightly smaller than 16px config for safety */
+                            font-size: 12px !important;
                             line-height: 1.5 !important;
+                            letter-spacing: -0.01em !important;
                             white-space: normal !important;
                             word-wrap: break-word !important;
                             word-break: break-word !important;
+                            padding: 2px !important;
                         }
                         #${uniqueId} .node foreignObject {
                             overflow: visible !important;
@@ -143,7 +145,7 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
     font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
     font-weight: 600 !important;
     font-size: 12px !important; 
-    line-height: 1.4 !important;
+    line-height: 1.5 !important;
     letter-spacing: -0.01em !important;
     color: #1e293b !important;
     fill: #1e293b !important;
@@ -151,6 +153,7 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
     white-space: normal !important; 
     word-wrap: break-word !important;
     word-break: break-word !important;
+    padding: 2px !important;
 }
 
 /* Ensure container allows overflow and auto height */
@@ -453,10 +456,10 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 curve: 'basis',
                 nodeSpacing: 50,
                 rankSpacing: 50,
-                padding: 15, // Standard padding
+                padding: 60, // Significantly increased padding for "strange picture" handling
             },
             themeVariables: {
-                fontSize: '16px', // Standard calculation
+                fontSize: '22px', // Increased base calculation size
                 primaryColor: '#ffffff',
                 primaryTextColor: '#0f172a',
                 primaryBorderColor: '#cbd5e1',
