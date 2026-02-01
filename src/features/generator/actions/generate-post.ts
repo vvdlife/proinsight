@@ -56,61 +56,72 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
     }
 
     try {
-        // 2. Serial Execution (High Quality / Stability Priority)
+        // 2. Parallel Execution (Optimization)
         console.log("🚀 Starting Generation Pipeline (Pro Mode enabled)...");
 
-        // 2-1. SEO Planning
-        console.log("🧠 [Phase 1] SEO Strategy Planning...");
-        const seoStrategy = await planSEOStrategy(data.topic, apiKey);
-        console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
+        // DEFINE PROMISES
 
-        // 2-2. Drafting (Writer)
-        console.log("✍️ [Phase 2] Drafting content...");
-        const draftContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
+        // Branch A: Text Pipeline (SEO -> Draft -> Refine -> Voice -> Schema)
+        const textPipelinePromise = (async () => {
+            // 2-1. SEO Planning
+            console.log("🧠 [Phase 1] SEO Strategy Planning...");
+            const seoStrategy = await planSEOStrategy(data.topic, apiKey);
+            console.log("   ✅ Strategy Planned:", seoStrategy.targetKeywords[0]);
 
-        // 2-3. Refining (Editor-in-Chief)
-        // With Vercel Pro, we can afford the time for the high-quality model to think deeply.
-        console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
-        const refinedContent = await refinePost(draftContent, data.topic, apiKey);
+            // 2-2. Drafting (Writer)
+            console.log("✍️ [Phase 2] Drafting content...");
+            const draftContent = await generateBlogPost(data, searchContext, apiKey, seoStrategy);
 
-        // 2-4. Image Generation (Designer)
-        let coverImageUrl = null;
-        if (data.includeImage) {
-            console.log("🎨 [Phase 4] Designing cover image...");
+            // 2-3. Refining (Editor-in-Chief)
+            console.log("🧐 [Phase 3] Editor-in-Chief: Refining content (High Quality)...");
+            const refinedContent = await refinePost(draftContent, data.topic, apiKey);
+
+            // 2-5. Voice Briefing (Radio Host) - Depends on Refined Content
+            let audioUrl = null;
+            try {
+                console.log("🎙️ [Phase 5] Recording Audio Briefing...");
+                // Generate Script
+                const script = await generateVoiceScript(refinedContent, apiKey);
+                console.log("   📜 Script Written (approx. words):", script.length);
+
+                // Generate Audio (TTS)
+                const audioLink = await generateAudio(script, Date.now().toString());
+                if (audioLink) {
+                    console.log("   ✅ Audio Briefing Recorded:", audioLink);
+                    audioUrl = audioLink;
+                }
+            } catch (e) {
+                console.error("   ❌ Voice Generation Failed (Skipping):", e);
+            }
+
+            // 3. Schema Generation
+            const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
+
+            return { refinedContent, audioUrl, schemaMarkup };
+        })();
+
+        // Branch B: Image Pipeline (Independent)
+        const imagePipelinePromise = (async () => {
+            if (!data.includeImage) return null;
+            console.log("🎨 [Phase 4] Designing cover image (Parallel)...");
             try {
                 const imagePrompt = await generateImagePrompt(data.topic, apiKey);
                 console.log(`   📝 Image Prompt: ${imagePrompt}`);
                 const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
                 if (imageBase64) {
                     console.log("   ✅ Image Generated Successfully");
-                    coverImageUrl = imageBase64;
+                    return imageBase64;
                 }
             } catch (e) {
                 console.error("   ❌ Image Generation Failed (Skipping):", e);
             }
-        }
+            return null;
+        })();
 
-        // 2-5. Voice Briefing (Radio Host)
-        let audioUrl = null;
-        try {
-            console.log("🎙️ [Phase 5] Recording Audio Briefing...");
-            // Generate Script
-            const script = await generateVoiceScript(refinedContent, apiKey);
-            console.log("   📜 Script Written (approx. words):", script.length);
+        // AWAIT ALL
+        const [textResult, coverImageUrl] = await Promise.all([textPipelinePromise, imagePipelinePromise]);
 
-            // Generate Audio (TTS)
-            // Use timestamp as temporary ID for filename
-            const audioLink = await generateAudio(script, Date.now().toString());
-            if (audioLink) {
-                console.log("   ✅ Audio Briefing Recorded:", audioLink);
-                audioUrl = audioLink;
-            }
-        } catch (e) {
-            console.error("   ❌ Voice Generation Failed (Skipping):", e);
-        }
-
-        // 3. Schema Generation
-        const schemaMarkup = generateJSONLD(seoStrategy, refinedContent);
+        const { refinedContent, audioUrl, schemaMarkup } = textResult;
 
         // Post-processing: Append image if it exists
         let finalContent = refinedContent;
