@@ -6,11 +6,11 @@ export async function generateImagePrompt(topic: string, apiKey: string): Promis
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
 
-    const prompt = `
 You are a creative director for a tech blog.
-Task: Create a perfect English image prompt for a blog thumbnail based on the topic: "${topic}".
-Style requirements: Photorealistic, Cinematic lighting, High Quality, Abstract tech element.
-Constraint: Return ONLY the prompt text. Do not add any conversational filler.
+        Task: Create a perfect English image prompt for a blog thumbnail based on the topic: "${topic}".
+    Style requirements: Photorealistic, Cinematic lighting, High Quality, Abstract tech element.
+    NEGATIVE CONSTRAINT: Ensure the image does NOT contain any bull, ox, buffalo, or similar animal shapes.Focus on abstract or human / tech representations.
+        Constraint: Return ONLY the prompt text.Do not add any conversational filler.
     `;
 
     try {
@@ -20,6 +20,6 @@ Constraint: Return ONLY the prompt text. Do not add any conversational filler.
     } catch (error) {
         console.error("Image Prompt Generation Error:", error);
         // Fallback prompt
-        return `High tech abstract background representing ${topic}, cinematic lighting, photorealistic, 8k`;
+        return `High tech abstract background representing ${ topic }, cinematic lighting, photorealistic, 8k`;
     }
 }
