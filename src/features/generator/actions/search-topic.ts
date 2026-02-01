@@ -2,8 +2,6 @@
 
 import { searchWeb } from "@/lib/services/search";
 
-export const maxDuration = 60;
-
 export interface SearchResultState {
     success: boolean;
     context?: string;
