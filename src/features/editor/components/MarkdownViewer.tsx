@@ -57,12 +57,11 @@ classDef data fill:#f0fdf4,stroke:#4ade80,stroke-width:2px,color:#1e293b;
                         #${uniqueId} .nodeLabel, #${uniqueId} .edgeLabel, #${uniqueId} .label, #${uniqueId} .node text, #${uniqueId} .node div, #${uniqueId} .node span, #${uniqueId} .node p {
                             font-family: 'Pretendard', sans-serif !important;
                             font-size: 12px !important;
-                            line-height: 1.5 !important;
+                            line-height: 1.4 !important;
                             letter-spacing: -0.01em !important;
                             white-space: normal !important;
                             word-wrap: break-word !important;
                             word-break: break-word !important;
-                            padding: 2px !important;
                         }
                         #${uniqueId} .node foreignObject {
                             overflow: visible !important;
@@ -458,7 +457,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
                 padding: 15, // Standard padding
             },
             themeVariables: {
-                fontSize: '16px', // Standard calculation
+                fontSize: '20px', // Nuclear Margin Strategy (Calculated at 20px, Rendered at 12px)
                 primaryColor: '#ffffff',
                 primaryTextColor: '#0f172a',
                 primaryBorderColor: '#cbd5e1',
