@@ -171,7 +171,7 @@ export function TopicRecommender({ onSelectTopic }: TopicRecommenderProps) {
                             </div>
                         )}
 
-                        {!isPending && topics.length === 0 && !open && (
+                        {!isPending && topics.length === 0 && (
                             <div className="text-center py-12 text-muted-foreground">
                                 "추천 받기" 버튼을 눌러보세요.
                             </div>
