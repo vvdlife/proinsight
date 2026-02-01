@@ -114,7 +114,7 @@ export async function generatePostImage(postId: string, topic: string) {
 
 import { generateOutline, generateSection, Outline } from "@/lib/services/ai";
 
-export async function generatePostStep1Outline(data: PostFormValues, searchContext?: string): Promise<{ success: boolean; outline?: Outline; seoStrategy?: any; message?: string }> {
+export async function generatePostStep1Outline(data: PostFormValues, searchContext?: string): Promise<{ success: boolean; outline?: Outline; seoStrategy?: any; postId?: string; message?: string }> {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
@@ -122,6 +122,20 @@ export async function generatePostStep1Outline(data: PostFormValues, searchConte
     if (!settings?.apiKey) return { success: false, message: "API Key not found" };
 
     try {
+        // Early Post Creation (PREPARING) - Allows parallel image generation
+        console.log("🆕 [Step 1] Creating Placeholder Post...");
+        const post = await prisma.post.create({
+            data: {
+                topic: data.topic,
+                content: "", // Placeholder
+                tone: data.tone,
+                status: "PREPARING", // New temporary status? Or keep DRAFT. DRAFT is fine.
+                userId,
+                coverImage: null,
+            },
+        });
+        const postId = post.id;
+
         console.log("🧠 [Step 1] SEO Strategy & Outline...");
         const seoStrategy = await planSEOStrategy(data.topic, settings.apiKey);
 
@@ -129,7 +143,7 @@ export async function generatePostStep1Outline(data: PostFormValues, searchConte
         // Note: generateOutline is now exported from ai.ts
         const outline = await generateOutline(data, searchContext, settings.apiKey, data.model, seoStrategy);
 
-        return { success: true, outline, seoStrategy };
+        return { success: true, outline, seoStrategy, postId };
     } catch (e: any) {
         console.error("Step 1 Failed:", e);
         return { success: false, message: e.message || "Outline generation failed" };
@@ -163,6 +177,7 @@ export async function generatePostStep3Finalize(
     outline: Outline,
     sectionContents: string[],
     seoStrategy: any,
+    postId: string, // Requires postId now
     searchContext?: string
 ): Promise<GeneratePostResult> {
     const { userId } = await auth();
@@ -197,19 +212,17 @@ ${referencesSection}
 
         const schemaMarkup = generateJSONLD(seoStrategy, finalContent);
 
-        const post = await prisma.post.create({
+        // Update existing Post instead of creating new one
+        await prisma.post.update({
+            where: { id: postId, userId },
             data: {
-                topic: data.topic,
                 content: finalContent,
-                tone: data.tone,
-                status: "DRAFT",
-                userId,
-                coverImage: null,
+                status: "DRAFT", // Ready for review
                 schemaMarkup: schemaMarkup,
             },
         });
 
-        return { success: true, postId: post.id, content: finalContent, message: "글 생성이 완료되었습니다." };
+        return { success: true, postId: postId, content: finalContent, message: "글 생성이 완료되었습니다." };
 
     } catch (e: any) {
         console.error("Step 3 Failed:", e);

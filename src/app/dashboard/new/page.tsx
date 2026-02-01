@@ -60,7 +60,7 @@ export default function NewPostPage() {
             keywords: "",
             tone: undefined,
             length: undefined,
-            includeImage: false,
+            includeImage: true,
             // rivalUrl removed
             model: "gemini-1.5-flash",
         },
@@ -87,18 +87,26 @@ export default function NewPostPage() {
                 }
                 const finalContext = searchResult.context;
 
-                // Step 2: Outline
+                // Step 2: Outline & Early Post Creation
                 setStatus("PLANNING");
                 setProgress(30);
                 setProgressMessage("블로그 글의 목차와 전략을 수립하고 있습니다...");
 
                 const outlineResult = await generatePostStep1Outline(data, finalContext);
-                if (!outlineResult.success || !outlineResult.outline) {
+                if (!outlineResult.success || !outlineResult.outline || !outlineResult.postId) {
                     toast.error("목차 생성 실패: " + outlineResult.message);
                     setStatus("IDLE");
                     return;
                 }
                 const outline = outlineResult.outline;
+                const postId = outlineResult.postId;
+
+                // 🚀 Parallel Image Generation Trigger
+                if (data.includeImage) {
+                    console.log("🎨 Triggering Parallel Image Generation...");
+                    generatePostImage(postId, data.topic).catch(err => console.error("Parallel Image Gen Failed:", err));
+                    toast.info("이미지 생성이 백그라운드에서 시작되었습니다. 🎨");
+                }
 
                 // Step 3: Write Sections (Client-Side Orchestration)
                 setStatus("WRITING");
@@ -134,18 +142,12 @@ export default function NewPostPage() {
                 setProgress(90);
                 setProgressMessage("전체 내용을 조립하고 저장하고 있습니다...");
 
-                const postResult = await generatePostStep3Finalize(data, outline, sectionContents, outlineResult.seoStrategy, finalContext);
+                // Pass existing postId to update it
+                const postResult = await generatePostStep3Finalize(data, outline, sectionContents, outlineResult.seoStrategy, postId, finalContext);
 
                 if (postResult.success && postResult.postId) {
                     setProgress(100);
-                    setProgressMessage("완료! 이미지를 생성하고 이동합니다...");
-
-                    const postId = postResult.postId;
-
-                    // Step 5: Image Generation (Background)
-                    if (data.includeImage) {
-                        generatePostImage(postId, data.topic).catch(console.error);
-                    }
+                    setProgressMessage("완료! 상세 페이지로 이동합니다...");
 
                     toast.success("글 생성이 완료되었습니다!");
                     router.push(`/dashboard/post/${postResult.postId}`);
