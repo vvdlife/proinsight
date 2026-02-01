@@ -11,7 +11,7 @@ export const postSchema = z.object({
     includeImage: z.boolean(),
     rivalUrl: z.string().optional(), // Competitor analysis URL
     experience: z.string().optional(), // Personal experience/anecdote for E-E-A-T
-    model: z.enum(["gemini-2.0-flash-exp", "gemini-3-pro-preview"]).default("gemini-2.0-flash-exp"),
+    model: z.enum(["gemini-3-flash-preview", "gemini-3-pro-preview"]).default("gemini-3-flash-preview"),
 });
 
 
