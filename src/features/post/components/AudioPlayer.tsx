@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Volume2, VolumeX, Forward, Rewind } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX, Forward, Rewind, Download } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,23 @@ export function AudioPlayer({ src, className }: AudioPlayerProps) {
         setPlaybackRate(nextRate);
     };
 
+    const handleDownload = async () => {
+        try {
+            const response = await fetch(src);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = "voice-briefing.mp3";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Download failed:", error);
+        }
+    };
+
     return (
         <div className={cn("bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm", className)}>
             <audio ref={audioRef} src={src} />
@@ -94,9 +111,14 @@ export function AudioPlayer({ src, className }: AudioPlayerProps) {
                         </span>
                         Audio Briefing
                     </span>
-                    <button onClick={changeSpeed} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800">
-                        {playbackRate}x
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleDownload} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800" title="Download MP3">
+                            <Download className="h-3 w-3" />
+                        </button>
+                        <button onClick={changeSpeed} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800">
+                            {playbackRate}x
+                        </button>
+                    </div>
                 </div>
 
                 {/* Progress Bar */}
