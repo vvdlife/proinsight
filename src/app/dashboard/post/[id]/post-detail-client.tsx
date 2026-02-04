@@ -40,6 +40,8 @@ import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDash
 import { ReadingProgressBar } from "@/features/post/components/ReadingProgressBar";
 import { TableOfContents } from "@/features/post/components/TableOfContents";
 import { AudioPlayer } from "@/features/post/components/AudioPlayer";
+import { generateVoiceBriefing } from "@/features/post/actions/generate-voice";
+import { Headphones } from "lucide-react";
 
 
 // Dynamic import for MDXEditor to avoid SSR issues
@@ -57,9 +59,32 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
     const [content, setContent] = useState(initialPost.content);
     const [isPending, startTransition] = useTransition();
 
-    // SEO State
     const [seoResult, setSeoResult] = useState<AnalyzeSEOResponse["data"] | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Voice Blog State
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [audioUrl, setAudioUrl] = useState<string | null>(initialPost.audioUrl);
+
+    const handleGenerateAudio = async () => {
+        setIsGeneratingAudio(true);
+        toast.info("오디오 브리핑 생성 시작...", { description: "대본 작성 및 음성 변환 중입니다. (약 10-20초 소요)" });
+
+        try {
+            const result = await generateVoiceBriefing(initialPost.id, content);
+            if (result.success && result.audioUrl) {
+                setAudioUrl(result.audioUrl);
+                toast.success("오디오 브리핑이 완성되었습니다!", { description: "상단 플레이어에서 확인하세요." });
+            } else {
+                toast.error("오디오 생성 실패", { description: result.message });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("오디오 생성 중 오류가 발생했습니다.");
+        } finally {
+            setIsGeneratingAudio(false);
+        }
+    };
 
     // Optimizer State
     const [isOptimizing, setIsOptimizing] = useState(false);
@@ -230,7 +255,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                             {/* WordPress Publish */}
                             <WordPressDialog post={{ ...initialPost, content }} />
 
-                            {/* SEO Analyzer */}
                             <Sheet modal={false}>
                                 <SheetTrigger asChild>
                                     <Button variant="outline" size="icon" title="SEO 분석">
@@ -254,6 +278,20 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                                     />
                                 </SheetContent>
                             </Sheet>
+
+                            {/* Audio Generation Button (On-Demand) */}
+                            {!audioUrl && (
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleGenerateAudio}
+                                    disabled={isGeneratingAudio}
+                                    title="오디오 브리핑 생성 (AI)"
+                                    className={isGeneratingAudio ? "animate-pulse" : ""}
+                                >
+                                    {isGeneratingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Headphones className="h-4 w-4" />}
+                                </Button>
+                            )}
 
 
                             {isEditing ? (
@@ -338,9 +376,9 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                     </div>
 
                     {/* Audio Briefing Player */}
-                    {initialPost.audioUrl && (
+                    {audioUrl && (
                         <div className="print:hidden animate-in fade-in slide-in-from-top-4">
-                            <AudioPlayer src={initialPost.audioUrl} />
+                            <AudioPlayer src={audioUrl} />
                         </div>
                     )}
                 </div>

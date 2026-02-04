@@ -1,37 +1,31 @@
 // Path: src/lib/services/tts.ts
 import OpenAI from "openai";
-import { put } from "@vercel/blob";
 
-export async function generateAudio(text: string, postId: string): Promise<string | null> {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        console.warn("Skipping TTS: OPENAI_API_KEY is missing.");
-        return null;
+/**
+ * Converts text to speech using OpenAI's Audio API.
+ * @param text The text to convert to speech.
+ * @returns A Buffer containing the MP3 audio data.
+ */
+export async function generateSpeech(text: string): Promise<Buffer> {
+    if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OpenAI API Key is missing. Please check your environment variables.");
     }
 
-    const openai = new OpenAI({ apiKey });
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
 
     try {
-        console.log("🔊 Generating Audio (OpenAI TTS)...");
         const mp3 = await openai.audio.speech.create({
-            model: "tts-1", // or "tts-1-hd" for better quality
-            voice: "onyx",  // Deep, authoritative, news-like voice
+            model: "tts-1", // tts-1 is faster, tts-1-hd is higher quality. "tts-1" is good for speed.
+            voice: "onyx", // "onyx" is deep and professional. "alloy" is neutral.
             input: text,
         });
 
         const buffer = Buffer.from(await mp3.arrayBuffer());
-
-        // Upload to Vercel Blob
-        const filename = `audio-briefing-${postId}-${Date.now()}.mp3`;
-        const blob = await put(filename, buffer, {
-            access: 'public',
-        });
-
-        console.log(`   ✅ Audio Uploaded: ${blob.url}`);
-        return blob.url;
-
+        return buffer;
     } catch (error) {
         console.error("TTS Generation Error:", error);
-        return null;
+        throw new Error("TTS 변환에 실패했습니다.");
     }
 }

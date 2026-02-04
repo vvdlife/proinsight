@@ -1,34 +1,43 @@
 // Path: src/lib/services/voice-script.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+/**
+ * Generates a radio-style script from a blog post content using Gemini.
+ * @param content The full markdown content of the blog post.
+ * @param apiKey Google Gemini API Key.
+ * @returns A script string optimized for TTS (2-3 minutes length).
+ */
 export async function generateVoiceScript(content: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); // Use efficient model for summarization
 
     const prompt = `
-    You are a Professional Radio Host for a Tech/Knowledge podcast called "ProInsight Audio".
-    Your task is to convert the following blog post content into a natural, engaging AUDIO SCRIPT.
+You are a charismatic Radio Host for "ProInsight AI".
+Your listener is a busy professional who wants to get the key insights from this blog post while driving or commuting.
 
-    GUIDELINES:
-    1. Tone: Friendly, intelligent, and conversational. Like a tech columnist talking to a friend.
-    2. Structure:
-       - Intro: "안녕하세요, ProInsight 오디오 브리핑입니다. 오늘은 [Topic]에 대해 이야기해보겠습니다."
-       - Body: Summarize the key 3-4 points. Use transition phrases like "첫 번째로," "재미있는 점은," "결론적으로."
-       - Outro: "오늘의 인사이트가 도움이 되셨나요? 지금까지 ProInsight였습니다. 감사합니다."
-    3. Length: Approximately 2-3 minutes spoken (about 400-500 words).
-    4. Language: Korean (Natural Spoken Korean).
-    5. No Markdown formatting (bold, etc.) - just plain text for TTS.
+Task:
+Convert the following blog post into a 2-3 minute radio script (approx. 400-500 words).
+Do NOT include any stage directions like [Sound Effect], [Intro Music], or (Laughs).
+ONLY write the spoken text that the TTS engine should read.
+The tone should be professional yet conversational, engaging, and clear.
 
-    BLOG CONTENT:
-    ${content.substring(0, 20000)}
-    `;
+Structure:
+1.  **Intro**: "안녕하세요, ProInsight AI 브리핑입니다. 오늘의 주제는..." (Briefly introduce the topic).
+2.  **Body**: Summarize the 3-4 most important key takeaways from the content. Use transition words like "첫 번째로," "또한," "마지막으로," to make it easy to follow aurally.
+3.  **Conclusion**: A brief wrap-up and a call to action (e.g., "더 자세한 내용은 본문을 참고해주세요.").
+
+Input Blog Post:
+${content}
+
+Output Script (Korean):
+`;
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        return response.text().trim();
+        return response.text();
     } catch (error) {
         console.error("Voice Script Generation Error:", error);
-        throw new Error("Failed to generate voice script.");
+        throw new Error("오디오 대본 생성에 실패했습니다.");
     }
 }
