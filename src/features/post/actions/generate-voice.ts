@@ -23,8 +23,9 @@ export async function generateVoiceBriefing(postId: string, content: string) {
         return { success: false, message: "Gemini API Key가 설정되지 않았습니다. 설정 페이지에서 등록해주세요." };
     }
 
-    // 2. Validate OpenAI Key (Env -> User Settings -> Fail)
-    const openaiKey = process.env.OPENAI_API_KEY || settings.openaiApiKey;
+    // 2. Validate OpenAI Key (User Settings > Env)
+    // Priority: DB Setting (User override) -> Env Variable (Server default)
+    const openaiKey = settings.openaiApiKey || process.env.OPENAI_API_KEY;
 
     console.log("🎙️ [Debug] Checking OpenAI Key Resolution:", {
         envExists: !!process.env.OPENAI_API_KEY,
