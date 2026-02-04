@@ -6,13 +6,15 @@ import OpenAI from "openai";
  * @param text The text to convert to speech.
  * @returns A Buffer containing the MP3 audio data.
  */
-export async function generateSpeech(text: string): Promise<Buffer> {
-    if (!process.env.OPENAI_API_KEY) {
-        throw new Error("OpenAI API Key is missing. Please check your environment variables.");
+export async function generateSpeech(text: string, apiKey?: string): Promise<Buffer> {
+    const finalApiKey = apiKey || process.env.OPENAI_API_KEY;
+
+    if (!finalApiKey) {
+        throw new Error("OpenAI API Key is missing. Please check settings or environment variables.");
     }
 
     const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: finalApiKey,
     });
 
     try {

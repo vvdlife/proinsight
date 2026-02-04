@@ -10,7 +10,7 @@ export type SaveApiKeyResult = {
     message?: string;
 };
 
-export async function saveApiKey(apiKey: string): Promise<SaveApiKeyResult> {
+export async function saveApiKey(apiKey: string, provider: "gemini" | "openai" = "gemini"): Promise<SaveApiKeyResult> {
     const { userId } = await auth();
 
     if (!userId) {
@@ -18,10 +18,12 @@ export async function saveApiKey(apiKey: string): Promise<SaveApiKeyResult> {
     }
 
     try {
+        const updateData = provider === "openai" ? { openaiApiKey: apiKey } : { apiKey };
+
         await prisma.userSettings.upsert({
             where: { userId },
-            update: { apiKey },
-            create: { userId, apiKey },
+            update: updateData,
+            create: { userId, ...updateData },
         });
 
         revalidatePath("/", "layout");

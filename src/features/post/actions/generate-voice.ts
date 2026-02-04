@@ -13,27 +13,42 @@ export async function generateVoiceBriefing(postId: string, content: string) {
         return { success: false, message: "로그인이 필요합니다." };
     }
 
-    // 1. Get User API Key for Gemini
+    // 1. Get User API Keys
     const settings = await prisma.userSettings.findUnique({
         where: { userId },
-        select: { apiKey: true },
+        select: { apiKey: true, openaiApiKey: true },
     });
 
     if (!settings?.apiKey) {
-        return { success: false, message: "Gemini API Key가 설정되지 않았습니다." };
+        return { success: false, message: "Gemini API Key가 설정되지 않았습니다. 설정 페이지에서 등록해주세요." };
     }
 
-    // 2. Validate OpenAI Key (Env check is done in tts.ts, but good to catch early)
-    if (!process.env.OPENAI_API_KEY) {
-        return { success: false, message: "서버에 OpenAI API Key가 설정되지 않았습니다. 관리자에게 문의하세요." };
+    // 2. Validate OpenAI Key (Env -> User Settings -> Fail)
+    const openaiKey = process.env.OPENAI_API_KEY || settings.openaiApiKey;
+
+    console.log("🎙️ [Debug] Checking OpenAI Key Resolution:", {
+        envExists: !!process.env.OPENAI_API_KEY,
+        dbExists: !!settings.openaiApiKey,
+        finalKeyUsed: !!openaiKey
+    });
+
+    if (!openaiKey) {
+        return { success: false, message: "OpenAI API Key가 없습니다. 설정 페이지에서 등록해주세요." };
     }
+
+    // Temporarily inject key into process.env for tts.ts library (or refactor logic)
+    // Better approach: Pass key to service functions.
+    // However, existing tts.ts relies on process.env or new instance.
+    // Let's refactor tts.ts slightly or handle logic here.
+
+    // For now, let's update tts.ts to accept key as argument.
 
     try {
         console.log("🎙️ [Voice] Step 1: Generating Script...");
         const script = await generateVoiceScript(content, settings.apiKey);
 
         console.log("🎙️ [Voice] Step 2: Generating Audio (TTS)...");
-        const audioBuffer = await generateSpeech(script);
+        const audioBuffer = await generateSpeech(script, openaiKey);
 
         console.log("🎙️ [Voice] Step 3: Uploading to Blob...");
         // Use Vercel Blob for storage

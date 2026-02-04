@@ -30,6 +30,7 @@ model UserSettings {
   id        String   @id @default(cuid())
   userId    String   @unique
   apiKey    String?  // Google Gemini API Key
+  openaiApiKey String? // OpenAI API Key (New)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
