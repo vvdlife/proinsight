@@ -27,7 +27,14 @@ export async function generateSpeech(text: string, apiKey?: string): Promise<Buf
         const buffer = Buffer.from(await mp3.arrayBuffer());
         return buffer;
     } catch (error) {
-        console.error("TTS Generation Error:", error);
-        throw new Error("TTS 변환에 실패했습니다.");
+        console.error("TTS Generation Error Details:", error);
+        if (error instanceof OpenAI.APIError) {
+            console.error("OpenAI API Status:", error.status);
+            console.error("OpenAI API Message:", error.message);
+            console.error("OpenAI API Code:", error.code);
+            console.error("OpenAI API Type:", error.type);
+            throw new Error(`TTS 변환 실패: ${error.message} (Code: ${error.code})`);
+        }
+        throw new Error("TTS 변환에 실패했습니다. (Unknown Error)");
     }
 }
