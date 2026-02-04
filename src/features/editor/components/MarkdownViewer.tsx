@@ -358,12 +358,24 @@ const slugify = (text: string) =>
 
 // Helper to detect alert pattern in a string
 const detectAlert = (text: string) => {
-    const match = text.match(/^['"]?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]['"]?\s*(.*)/i);
+    // Only match the tag, ignore the rest of the line for Title to prevent duplication
+    const match = text.match(/^['"]?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]['"]?/i);
     if (!match) return null;
 
+    const type = match[1].toLowerCase() as "note" | "tip" | "important" | "warning" | "caution";
+
+    // Localized Default Titles
+    const titles: Record<string, string> = {
+        note: "참고 (Note)",
+        tip: "팁 (Tip)",
+        important: "중요 (Important)",
+        warning: "주의 (Warning)",
+        caution: "경고 (Caution)",
+    };
+
     return {
-        type: match[1].toLowerCase() as "note" | "tip" | "important" | "warning" | "caution",
-        title: match[2].replace(/['"]$/, ''), // Remove trailing quote if present
+        type,
+        title: titles[type], // Use default title instead of extracting content
     };
 };
 
@@ -398,8 +410,16 @@ const Blockquote = ({ children }: any) => {
     const childrenArray = React.Children.toArray(children);
     const firstChild = childrenArray[0];
 
-    if (React.isValidElement(firstChild) && firstChild.type === 'p') {
+    // Relaxed check: Check if it's an element (likely P) and proceed content inspection
+    if (React.isValidElement(firstChild)) {
         const element = firstChild as React.ReactElement<any>;
+        // Ensure it has props (defensive)
+        if (!element.props || !element.props.children) return (
+            <blockquote className="my-8 border-l-4 border-primary/40 pl-6 py-2 italic bg-muted/20 rounded-r-lg">
+                {children}
+            </blockquote>
+        );
+
         const grandChildren = React.Children.toArray(element.props.children);
         const firstGrandChild = grandChildren[0];
 
