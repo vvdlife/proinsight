@@ -10,6 +10,8 @@ import { generateBlogImage } from "@/lib/services/image-gen";
 import { planSEOStrategy } from "@/lib/services/seo-planner";
 import { generateJSONLD } from "@/lib/services/ai";
 
+export const maxDuration = 300;
+
 export type GeneratePostResult = {
     success: boolean;
     message?: string;

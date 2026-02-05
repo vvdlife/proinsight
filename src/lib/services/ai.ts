@@ -27,6 +27,28 @@ export interface Outline {
 
 import { SEOStrategy } from "./seo-planner";
 
+// Helper: Robust JSON Parser
+function parseAIResponse<T>(text: string): T {
+    try {
+        // 1. Try simple parse first
+        return JSON.parse(text) as T;
+    } catch (e) {
+        // 2. Extract from markdown code blocks (```json ... ```)
+        const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch) {
+            try { return JSON.parse(codeBlockMatch[1]) as T; } catch (e2) { /* continue */ }
+        }
+
+        // 3. Extract purely by brace matching (fallback)
+        const braceMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (braceMatch) {
+            try { return JSON.parse(braceMatch[0]) as T; } catch (e3) { /* continue */ }
+        }
+
+        throw new Error(`Failed to parse AI response as JSON: ${text.substring(0, 50)}...`);
+    }
+}
+
 // Phase 1: The Architect - Generates a logical outline
 export async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, selectedModel: string, seoStrategy?: SEOStrategy): Promise<Outline> {
     // Use selected model
@@ -73,13 +95,7 @@ INSTRUCTIONS:
         const response = await result.response;
         const text = response.text();
 
-        // Robust JSON Extraction (Senior Pattern)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error("No JSON found in response");
-        }
-
-        return JSON.parse(jsonMatch[0]) as Outline;
+        return parseAIResponse<Outline>(text);
     } catch (error) {
         console.error("Outline Generation Failed:", error);
         throw new Error("목차 생성에 실패했습니다. (AI Response Error)");
@@ -369,13 +385,7 @@ export async function recommendTopics(searchContext: string | undefined, categor
         const response = await result.response;
         const text = response.text();
 
-        // Robust JSON Extraction
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-            throw new Error("No JSON List found in response");
-        }
-
-        return JSON.parse(jsonMatch[0]) as RecommendedTopic[];
+        return parseAIResponse<RecommendedTopic[]>(text);
     } catch (error) {
         console.error("Topic Recommendation Failed:", error);
         return [];
@@ -447,12 +457,7 @@ export async function generateSocialContent(
         const response = await result.response;
         const text = response.text();
 
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error("No JSON found in response");
-        }
-
-        return JSON.parse(jsonMatch[0]) as SocialContentResult;
+        return parseAIResponse<SocialContentResult>(text);
     } catch (error) {
         console.error("Social Content Generation Failed:", error);
         throw new Error("소셜 콘텐츠 생성에 실패했습니다.");

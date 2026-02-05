@@ -23,28 +23,57 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
         // I'll throw for now so the user knows they need the key.
     }
 
+    const TIMEOUT_MS = 15000; // 15 seconds max for Tavily
+
     try {
-        const response = await fetch("https://api.tavily.com/search", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                api_key: apiKey,
-                query: query,
-                search_depth: depth, // Configurable depth
-                include_answer: true,     // Direct answer from Tavily
-                include_raw_content: false, // content is usually enough, raw is too big
-                max_results: 5,
-            }),
-        });
+        const fetchWithTimeout = async (depthOverride?: "basic") => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Tavily API Error: ${response.status} - ${errorText}`);
+            try {
+                const response = await fetch("https://api.tavily.com/search", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        query: query,
+                        search_depth: depthOverride || depth, // Use override if provided
+                        include_answer: true,
+                        include_raw_content: false,
+                        max_results: 5,
+                    }),
+                    signal: controller.signal,
+                });
+                clearTimeout(id);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Tavily API Error: ${response.status} - ${errorText}`);
+                }
+
+                return await response.json();
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        };
+
+        let data;
+        try {
+            // First try with requested depth (advanced)
+            data = await fetchWithTimeout();
+        } catch (error: any) {
+            console.warn(`Initial search failed or timed out: ${error.message}`);
+            if (depth === "advanced" && (error.name === 'AbortError' || error.message.includes('timeout'))) {
+                // Retry with basic depth which is faster
+                console.log("Falling back to 'basic' search depth...");
+                data = await fetchWithTimeout("basic");
+            } else {
+                throw error;
+            }
         }
-
-        const data = await response.json();
 
         return {
             query: data.query,
@@ -59,9 +88,6 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
 
     } catch (error) {
         console.error("Search Service Error:", error);
-        // Rethrow or return empty?
-        // The requirement says "만약 검색 결과가 없거나 부족하면... 에러를 반환".
-        // If the API fails, it's also a failure to get info.
         throw error;
     }
 }

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Check, Loader2, Search, FileText, PenTool, Save, CheckCircle2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export type StudioStep = "IDLE" | "SEARCHING" | "PLANNING" | "WRITING" | "SAVING" | "COMPLETED";
 
@@ -34,7 +35,7 @@ export function StudioSidebar({ status, progress, logs, className }: StudioSideb
     const getStepStatus = (stepId: string) => {
         const stepIndex = STEPS.findIndex(s => s.id === stepId);
         const currentIndex = STEPS.findIndex(s => s.id === status);
-        
+
         if (status === "COMPLETED") return "completed";
         if (status === "IDLE") return "pending";
 
@@ -54,12 +55,14 @@ export function StudioSidebar({ status, progress, logs, className }: StudioSideb
                 <p className="text-xs text-muted-foreground">
                     Agent is orchestrating your content...
                 </p>
-                
+
                 {/* Global Progress */}
                 <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                    <div 
-                        className="h-full bg-primary transition-all duration-500 ease-out" 
-                        style={{ width: `${progress}%` }}
+                    <motion.div
+                        className="h-full bg-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
                     />
                 </div>
             </div>
@@ -70,7 +73,7 @@ export function StudioSidebar({ status, progress, logs, className }: StudioSideb
                     {STEPS.map((step, index) => {
                         const stepStatus = getStepStatus(step.id);
                         const Icon = step.icon;
-                        
+
                         return (
                             <div key={step.id} className="relative pl-8 py-2">
                                 {/* Vertical Line */}
@@ -85,8 +88,8 @@ export function StudioSidebar({ status, progress, logs, className }: StudioSideb
                                 <div className={cn(
                                     "absolute left-0 top-2.5 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors duration-300",
                                     stepStatus === "completed" ? "bg-primary border-primary text-primary-foreground" :
-                                    stepStatus === "active" ? "bg-background border-primary text-primary animate-pulse" :
-                                    "bg-background border-muted text-muted-foreground"
+                                        stepStatus === "active" ? "bg-background border-primary text-primary animate-pulse" :
+                                            "bg-background border-muted text-muted-foreground"
                                 )}>
                                     {stepStatus === "completed" ? (
                                         <Check className="h-3.5 w-3.5" />
@@ -121,16 +124,23 @@ export function StudioSidebar({ status, progress, logs, className }: StudioSideb
                     <span>TERMINAL OUTPUT</span>
                     <span className="opacity-50">v1.0.2</span>
                 </div>
-                <div 
+                <div
                     ref={scrollRef}
                     className="h-32 overflow-y-auto font-mono text-[10px] space-y-1 p-2 rounded-md bg-background border shadow-inner"
                 >
-                    {logs.map((log, i) => (
-                        <div key={i} className="flex gap-2 text-foreground/80 break-all">
-                            <span className="text-muted-foreground shrink-0">{`>`}</span>
-                            <span>{log}</span>
-                        </div>
-                    ))}
+                    <AnimatePresence mode="popLayout">
+                        {logs.map((log, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex gap-2 text-foreground/80 break-all"
+                            >
+                                <span className="text-muted-foreground shrink-0">{`>`}</span>
+                                <span>{log}</span>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                     {logs.length === 0 && <span className="opacity-50 italic">Waiting for process start...</span>}
                     <div className="h-2" /> {/* Spacer */}
                 </div>
