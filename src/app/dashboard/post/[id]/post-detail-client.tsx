@@ -13,7 +13,7 @@ import { generateVoiceBriefing } from "@/features/post/actions/generate-voice";
 
 // Components
 import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
-import { SeoAnalysisPanel } from "@/features/post/components/SeoAnalysisPanel";
+import { SeoDashboard } from "@/features/post/components/SeoDashboard";
 import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDashboard";
 import { ReadingProgressBar } from "@/features/post/components/ReadingProgressBar";
 import { TableOfContents } from "@/features/post/components/TableOfContents";
@@ -246,7 +246,10 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                             AI가 콘텐츠를 분석하여 검색 엔진 최적화 점수와 개선 제안을 제공합니다.
                         </SheetDescription>
                     </SheetHeader>
-                    <SeoAnalysisPanel
+                    <SeoDashboard
+                        content={content}
+                        topic={initialPost.topic}
+                        schemaMarkup={initialPost.schemaMarkup}
                         seoResult={seoResult}
                         isAnalyzing={isAnalyzing}
                         isOptimizing={isOptimizing}
