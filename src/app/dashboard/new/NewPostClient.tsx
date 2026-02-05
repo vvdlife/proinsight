@@ -40,8 +40,9 @@ import { toast } from "sonner";
 import { TopicRecommender } from "@/features/generator/components/TopicRecommender";
 import { StudioSidebar, StudioStep } from "@/features/generator/components/StudioSidebar";
 import { LivePreview } from "@/features/generator/components/LivePreview";
-import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { ReferenceUploader } from "@/features/editor/components/ReferenceUploader";
+import { Attachment } from "@/lib/types/attachment";
 
 // Streaming States
 interface StreamSection {
@@ -64,6 +65,7 @@ export default function NewPostClient() {
     const [logs, setLogs] = useState<string[]>([]);
     const [liveSections, setLiveSections] = useState<StreamSection[]>([]);
     const [postTitle, setPostTitle] = useState("");
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
 
     const addLog = (message: string) => {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
@@ -111,7 +113,7 @@ export default function NewPostClient() {
                 setProgress(20);
                 addLog("Drafting structural outline...");
 
-                const outlineResult = await generatePostStep1Outline(data, finalContext);
+                const outlineResult = await generatePostStep1Outline(data, finalContext, attachments);
                 if (!outlineResult.success || !outlineResult.outline || !outlineResult.postId) {
                     toast.error("목차 생성 실패: " + outlineResult.message);
                     addLog(`Error: ${outlineResult.message}`);
@@ -159,7 +161,7 @@ export default function NewPostClient() {
                     setProgress(progressPercent);
 
                     // Call Server Action
-                    const sectionResult = await generatePostStep2Section(data, section, finalContext, data.model);
+                    const sectionResult = await generatePostStep2Section(data, section, finalContext, data.model, attachments);
 
                     const content = (sectionResult.success && sectionResult.content)
                         ? sectionResult.content
@@ -182,7 +184,7 @@ export default function NewPostClient() {
                 setProgress(95);
                 addLog("Assembling final document...");
 
-                const postResult = await generatePostStep3Finalize(data, outline, sectionContents, outlineResult.seoStrategy, postId, finalContext);
+                const postResult = await generatePostStep3Finalize(data, outline, sectionContents, outlineResult.seoStrategy, postId, finalContext, attachments);
 
                 if (postResult.success && postResult.postId) {
                     setStatus("COMPLETED");
@@ -356,6 +358,14 @@ export default function NewPostClient() {
                                                 </FormItem>
                                             )}
                                         />
+
+                                        {/* Reference Uploader */}
+                                        <div className="space-y-2">
+                                            <ReferenceUploader
+                                                attachments={attachments}
+                                                onChange={setAttachments}
+                                            />
+                                        </div>
 
                                         <FormField
                                             control={form.control}

@@ -26,6 +26,29 @@ export interface Outline {
 }
 
 import { SEOStrategy } from "./seo-planner";
+import { Attachment } from "../types/attachment";
+
+// Helper: Convert Attachments to Gemini Parts
+function prepareContentParts(prompt: string, attachments: Attachment[] = []) {
+    const parts: any[] = [{ text: prompt }];
+
+    attachments.forEach(file => {
+        if (file.type.startsWith("image/") || file.type === "application/pdf") {
+            parts.push({
+                inlineData: {
+                    mimeType: file.type,
+                    data: file.content
+                }
+            });
+        } else if (file.type === "text/plain") {
+            // Append text file content to parts or prompt? 
+            // Better to append to text prompt or add as separate text part.
+            parts.push({ text: `\n\n[Reference File: ${file.name}]\n${file.content}\n` });
+        }
+    });
+
+    return parts;
+}
 
 // Helper: Robust JSON Parser
 function parseAIResponse<T>(text: string): T {
@@ -50,7 +73,7 @@ function parseAIResponse<T>(text: string): T {
 }
 
 // Phase 1: The Architect - Generates a logical outline
-export async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, selectedModel: string, seoStrategy?: SEOStrategy): Promise<Outline> {
+export async function generateOutline(data: PostFormValues, searchContext: string | undefined, apiKey: string, selectedModel: string, seoStrategy?: SEOStrategy, attachments: Attachment[] = []): Promise<Outline> {
     // Use selected model
     const model = getGeminiModel(apiKey, selectedModel, 0.2, "application/json");
 
@@ -91,7 +114,8 @@ INSTRUCTIONS:
 `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const contentParts = prepareContentParts(prompt, attachments);
+        const result = await model.generateContent(contentParts);
         const response = await result.response;
         const text = response.text();
 
@@ -108,7 +132,8 @@ export async function generateSection(
     section: OutlineSection,
     searchContext: string | undefined,
     apiKey: string,
-    selectedModel: string
+    selectedModel: string,
+    attachments: Attachment[] = []
 ): Promise<string> {
     // Use selected model
     const model = getGeminiModel(apiKey, selectedModel, 0.2);
@@ -178,7 +203,8 @@ STRICT INSTRUCTIONS:
 8. LANGUAGE: Write strictly in KOREAN (한국어). Do not use English unless it is a proper noun or technical term.
 `;
 
-    const result = await model.generateContent(prompt);
+    const contentParts = prepareContentParts(prompt, attachments);
+    const result = await model.generateContent(contentParts);
     const response = await result.response;
     return `## ${section.heading}\n\n${response.text()}`;
 }

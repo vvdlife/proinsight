@@ -9,6 +9,7 @@ import { generateImagePrompt } from "@/lib/services/image-prompt";
 import { generateBlogImage } from "@/lib/services/image-gen";
 import { planSEOStrategy } from "@/lib/services/seo-planner";
 import { generateJSONLD } from "@/lib/services/ai";
+import { Attachment } from "@/lib/types/attachment";
 
 
 
@@ -116,7 +117,7 @@ export async function generatePostImage(postId: string, topic: string) {
 
 import { generateOutline, generateSection, Outline } from "@/lib/services/ai";
 
-export async function generatePostStep1Outline(data: PostFormValues, searchContext?: string): Promise<{ success: boolean; outline?: Outline; seoStrategy?: any; postId?: string; message?: string }> {
+export async function generatePostStep1Outline(data: PostFormValues, searchContext?: string, attachments: Attachment[] = []): Promise<{ success: boolean; outline?: Outline; seoStrategy?: any; postId?: string; message?: string }> {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
@@ -143,7 +144,7 @@ export async function generatePostStep1Outline(data: PostFormValues, searchConte
 
         // Use selected model for outline
         // Note: generateOutline is now exported from ai.ts
-        const outline = await generateOutline(data, searchContext, settings.apiKey, data.model, seoStrategy);
+        const outline = await generateOutline(data, searchContext, settings.apiKey, data.model, seoStrategy, attachments);
 
         return { success: true, outline, seoStrategy, postId };
     } catch (e: any) {
@@ -156,7 +157,8 @@ export async function generatePostStep2Section(
     data: PostFormValues,
     section: any,
     searchContext: string | undefined,
-    model: string
+    model: string,
+    attachments: Attachment[] = []
 ): Promise<{ success: boolean; content?: string; message?: string }> {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
@@ -166,7 +168,7 @@ export async function generatePostStep2Section(
 
     try {
         console.log(`✍️ [Step 2] Writing Section: ${section.heading}`);
-        const content = await generateSection(data, section, searchContext, settings.apiKey, model);
+        const content = await generateSection(data, section, searchContext, settings.apiKey, model, attachments);
         return { success: true, content };
     } catch (e: any) {
         console.error(`Step 2 Failed (${section.heading}):`, e);
@@ -180,7 +182,8 @@ export async function generatePostStep3Finalize(
     sectionContents: string[],
     seoStrategy: any,
     postId: string, // Requires postId now
-    searchContext?: string
+    searchContext?: string,
+    attachments: Attachment[] = []
 ): Promise<GeneratePostResult> {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
