@@ -2,7 +2,7 @@
 
 import { searchWeb } from "@/lib/services/search";
 
-export const maxDuration = 300;
+
 
 export interface SearchResultState {
     success: boolean;
