@@ -220,7 +220,7 @@ export default function NewPostClient() {
     }
 
     return (
-        <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-64px)] w-full overflow-hidden flex flex-col md:flex-row relative">
+        <div className="h-[calc(100dvh-4rem)] md:h-[calc(100vh-64px)] w-full overflow-hidden flex flex-col md:flex-row relative">
             <AnimatePresence mode="wait">
                 {/* Mode: INPUT */}
                 {mode === "INPUT" && (
@@ -230,185 +230,187 @@ export default function NewPostClient() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="w-full h-full flex items-center justify-center p-4"
+                        className="w-full h-full overflow-y-auto p-4"
                     >
-                        <Card className="w-full max-w-2xl border-none shadow-xl bg-card/50 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle className="text-2xl">새 글 작성</CardTitle>
-                                <CardDescription>
-                                    AI 에이전트가 작성할 글의 주제와 설정을 입력해 주세요.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                        <FormField
-                                            control={form.control}
-                                            name="topic"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <div className="flex items-center justify-between">
-                                                        <FormLabel>주제 (Topic)</FormLabel>
-                                                        <TopicRecommender
-                                                            onSelectTopic={(topic, keywords) => {
-                                                                form.setValue("topic", topic);
-                                                                form.setValue("keywords", keywords);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <FormControl>
-                                                        <Input placeholder="예: 2024년 생성형 AI 트렌드" {...field} className="h-11" />
-                                                    </FormControl>
-                                                    <FormDescription>
-                                                        글의 핵심 주제를 5자 이상 입력하세요.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
-                                            name="keywords"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>키워드 (Keywords)</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="예: LLM, GPT-4, 자동화 (쉼표로 구분)"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="flex min-h-full items-center justify-center py-8">
+                            <Card className="w-full max-w-2xl border-none shadow-xl bg-card/50 backdrop-blur-sm">
+                                <CardHeader>
+                                    <CardTitle className="text-2xl">새 글 작성</CardTitle>
+                                    <CardDescription>
+                                        AI 에이전트가 작성할 글의 주제와 설정을 입력해 주세요.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                                             <FormField
                                                 control={form.control}
-                                                name="tone"
+                                                name="topic"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>어조 (Tone)</FormLabel>
-                                                        <Select
-                                                            onValueChange={field.onChange}
-                                                            value={field.value || ""}
-                                                        >
-                                                            <FormControl>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="어조 선택" />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                <SelectItem value="professional">전문적인</SelectItem>
-                                                                <SelectItem value="friendly">친근한</SelectItem>
-                                                                <SelectItem value="witty">위트있는</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-
-                                            <FormField
-                                                control={form.control}
-                                                name="length"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>글 길이 (Length)</FormLabel>
-                                                        <Select
-                                                            onValueChange={field.onChange}
-                                                            value={field.value || ""}
-                                                        >
-                                                            <FormControl>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="길이 선택" />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                <SelectItem value="short">짧은 요약 (500자)</SelectItem>
-                                                                <SelectItem value="medium">보통 (1000자)</SelectItem>
-                                                                <SelectItem value="long">심층 분석 (2000자+)</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-
-                                        <FormField
-                                            control={form.control}
-                                            name="includeImage"
-                                            render={({ field }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                                    <div className="space-y-0.5">
-                                                        <FormLabel className="text-base">AI 이미지 생성</FormLabel>
-                                                        <FormDescription>
-                                                            글 내용에 어울리는 이미지를 함께 생성합니다.
-                                                        </FormDescription>
-                                                    </div>
-                                                    <FormControl>
-                                                        <Switch
-                                                            checked={field.value}
-                                                            onCheckedChange={field.onChange}
-                                                        />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {/* Reference Uploader */}
-                                        <div className="space-y-2">
-                                            <ReferenceUploader
-                                                attachments={attachments}
-                                                onChange={setAttachments}
-                                            />
-                                        </div>
-
-                                        <FormField
-                                            control={form.control}
-                                            name="model"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>AI 모델 설정 (Model)</FormLabel>
-                                                    <Select
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <FormLabel>주제 (Topic)</FormLabel>
+                                                            <TopicRecommender
+                                                                onSelectTopic={(topic, keywords) => {
+                                                                    form.setValue("topic", topic);
+                                                                    form.setValue("keywords", keywords);
+                                                                }}
+                                                            />
+                                                        </div>
                                                         <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="모델 선택" />
-                                                            </SelectTrigger>
+                                                            <Input placeholder="예: 2024년 생성형 AI 트렌드" {...field} className="h-11" />
                                                         </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="gemini-3-flash-preview">
-                                                                <span className="font-medium">⚡ Gemini 3 Flash</span>
-                                                                <span className="text-xs text-muted-foreground ml-2">(Preview / 초고속)</span>
-                                                            </SelectItem>
-                                                            <SelectItem value="gemini-3-pro-preview">
-                                                                <span className="font-medium">🧠 Gemini 3 Pro</span>
-                                                                <span className="text-xs text-muted-foreground ml-2">(고지능 / 느림)</span>
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormDescription>
-                                                        Pro 모델은 품질이 높지만 60초 이상 소요될 수 있습니다.
-                                                    </FormDescription>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                                        <FormDescription>
+                                                            글의 핵심 주제를 5자 이상 입력하세요.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                                        <Button type="submit" className="w-full text-lg h-12" size="lg">
-                                            <Loader2 className="mr-2 h-5 w-5 animate-spin hidden" /> {/* Hidden loader, handle by state transition */}
-                                            Create Content
-                                        </Button>
-                                    </form>
-                                </Form>
-                            </CardContent>
-                        </Card>
+                                            <FormField
+                                                control={form.control}
+                                                name="keywords"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>키워드 (Keywords)</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="예: LLM, GPT-4, 자동화 (쉼표로 구분)"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="tone"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>어조 (Tone)</FormLabel>
+                                                            <Select
+                                                                onValueChange={field.onChange}
+                                                                value={field.value || ""}
+                                                            >
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="어조 선택" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="professional">전문적인</SelectItem>
+                                                                    <SelectItem value="friendly">친근한</SelectItem>
+                                                                    <SelectItem value="witty">위트있는</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="length"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>글 길이 (Length)</FormLabel>
+                                                            <Select
+                                                                onValueChange={field.onChange}
+                                                                value={field.value || ""}
+                                                            >
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="길이 선택" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="short">짧은 요약 (500자)</SelectItem>
+                                                                    <SelectItem value="medium">보통 (1000자)</SelectItem>
+                                                                    <SelectItem value="long">심층 분석 (2000자+)</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <FormField
+                                                control={form.control}
+                                                name="includeImage"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                        <div className="space-y-0.5">
+                                                            <FormLabel className="text-base">AI 이미지 생성</FormLabel>
+                                                            <FormDescription>
+                                                                글 내용에 어울리는 이미지를 함께 생성합니다.
+                                                            </FormDescription>
+                                                        </div>
+                                                        <FormControl>
+                                                            <Switch
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Reference Uploader */}
+                                            <div className="space-y-2">
+                                                <ReferenceUploader
+                                                    attachments={attachments}
+                                                    onChange={setAttachments}
+                                                />
+                                            </div>
+
+                                            <FormField
+                                                control={form.control}
+                                                name="model"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>AI 모델 설정 (Model)</FormLabel>
+                                                        <Select
+                                                            onValueChange={field.onChange}
+                                                            value={field.value}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="모델 선택" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="gemini-3-flash-preview">
+                                                                    <span className="font-medium">⚡ Gemini 3 Flash</span>
+                                                                    <span className="text-xs text-muted-foreground ml-2">(Preview / 초고속)</span>
+                                                                </SelectItem>
+                                                                <SelectItem value="gemini-3-pro-preview">
+                                                                    <span className="font-medium">🧠 Gemini 3 Pro</span>
+                                                                    <span className="text-xs text-muted-foreground ml-2">(고지능 / 느림)</span>
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormDescription>
+                                                            Pro 모델은 품질이 높지만 60초 이상 소요될 수 있습니다.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <Button type="submit" className="w-full text-lg h-12" size="lg">
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin hidden" /> {/* Hidden loader, handle by state transition */}
+                                                Create Content
+                                            </Button>
+                                        </form>
+                                    </Form>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </motion.div>
                 )}
 
