@@ -1,9 +1,10 @@
+"use server";
+
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 export async function createSubscription(formData: FormData) {
-    "use server";
 
     const { userId } = await auth();
     if (!userId) {
@@ -42,8 +43,6 @@ export async function createSubscription(formData: FormData) {
 }
 
 export async function toggleSubscription(isActive: boolean) {
-    "use server";
-
     const { userId } = await auth();
     if (!userId) {
         throw new Error("Unauthorized");
