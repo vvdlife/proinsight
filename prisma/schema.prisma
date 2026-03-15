@@ -39,6 +39,7 @@ model SocialPost {
   id        String   @id @default(cuid())
   platform  String   // "instagram", "twitter", "linkedin"
   content   String
+
   hashtags  String[]
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -49,15 +50,17 @@ model SocialPost {
 }
 
 model InsightSubscription {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  topic     String   // e.g., "Macro Economics", "Tech Trends", "Crypto"
-  frequency String   // "DAILY", "WEEKLY", "MONTHLY"
-  persona   String   // "AGGRESSIVE", "DEFENSIVE", "NEUTRAL"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  reports   InsightReport[]
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  topic          String   // e.g., "Macro Economics", "Tech Trends", "Crypto"
+  frequency      String   // "DAILY", "WEEKLY", "MONTHLY"
+  persona        String   // "AGGRESSIVE", "DEFENSIVE", "NEUTRAL"
+  isActive       Boolean  @default(true)
+  receiveEmail   Boolean  @default(true)
+  telegramChatId String?  // Optional Telegram Chat ID
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reports        InsightReport[]
 }
 
 model InsightReport {

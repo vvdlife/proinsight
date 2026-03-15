@@ -116,6 +116,37 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                         </div>
                     </div>
                 </CardContent>
+                <div className="px-6 pb-6 space-y-4">
+                    <h4 className="text-sm font-semibold flex items-center text-muted-foreground">
+                        <BellRing className="h-4 w-4 mr-1" />
+                        외부 알림 설정 (Push Notifications)
+                    </h4>
+                    <div className="bg-muted/50 p-4 rounded-lg space-y-4 border">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="receiveEmail">이메일 뉴스레터 수신</Label>
+                                <p className="text-xs text-muted-foreground">매일/매주 발행 시 가입된 이메일로 리포트를 쏴드립니다.</p>
+                            </div>
+                            <Switch 
+                                id="receiveEmail" 
+                                name="receiveEmail" 
+                                defaultChecked={subscription?.receiveEmail ?? true} 
+                            />
+                        </div>
+                        <div className="space-y-2 pt-2 border-t">
+                            <Label htmlFor="telegramChatId">텔레그램 챗 ID (선택)</Label>
+                            <Input 
+                                id="telegramChatId" 
+                                name="telegramChatId" 
+                                placeholder="예: 123456789" 
+                                defaultValue={subscription?.telegramChatId || ""}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Telegram Bot @userinfobot 등을 통해 확인한 Chat ID를 입력하면 생성 완료 알림이 전송됩니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <CardFooter className="bg-muted/50 p-6 flex justify-between items-center rounded-b-xl border-t">
                     <div className="flex items-center text-sm text-muted-foreground">
                         <BellRing className="h-4 w-4 mr-2" />

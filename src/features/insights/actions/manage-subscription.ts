@@ -14,6 +14,8 @@ export async function createSubscription(formData: FormData) {
     const topic = formData.get("topic") as string;
     const frequency = formData.get("frequency") as string;
     const persona = formData.get("persona") as string;
+    const receiveEmail = formData.get("receiveEmail") === "on";
+    const telegramChatId = formData.get("telegramChatId") as string | null;
 
     if (!topic || !frequency || !persona) {
         throw new Error("Missing required fields");
@@ -27,6 +29,8 @@ export async function createSubscription(formData: FormData) {
             topic,
             frequency,
             persona,
+            receiveEmail,
+            telegramChatId,
             isActive: true,
         },
         create: {
@@ -34,6 +38,8 @@ export async function createSubscription(formData: FormData) {
             topic,
             frequency,
             persona,
+            receiveEmail,
+            telegramChatId,
             isActive: true, // Will start generating immediately at next cron cycle
         },
     });
