@@ -2,7 +2,7 @@
 "use server";
 
 import { generateBlogPost } from "@/lib/services/ai";
-import { postSchema, PostFormValues } from "@/lib/schemas/post-schema";
+import { postSchema, PostFormValues, sectionSchema, outlineSchema } from "@/lib/schemas/post-schema";
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { generateImagePrompt } from "@/lib/services/image-prompt";
@@ -188,7 +188,14 @@ export async function generatePostStep3Finalize(
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
-    // Validate inputs
+    // 🛡️ Security: Validate input payloads
+    const formValidation = postSchema.safeParse(data);
+    if (!formValidation.success) return { success: false, message: "Invalid form data provided." };
+
+    const outlineValidation = outlineSchema.safeParse(outline);
+    if (!outlineValidation.success) return { success: false, message: "Invalid outline strictly provided." };
+
+    // Validate inputs lengths match
     if (sectionContents.length !== outline.sections.length) {
         return { success: false, message: "Mismatch between outline sections and generated contents." };
     }

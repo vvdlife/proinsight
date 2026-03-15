@@ -1,43 +1,52 @@
 // Path: src/lib/services/voice-script.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+export interface PodcastSegment {
+    speaker: "A" | "B";
+    text: string;
+}
+
 /**
- * Generates a radio-style script from a blog post content using Gemini.
+ * Generates a podcast-style conversational script from a blog post content using Gemini.
  * @param content The full markdown content of the blog post.
  * @param apiKey Google Gemini API Key.
- * @returns A script string optimized for TTS (2-3 minutes length).
+ * @returns A JSON array of PodcastSegments
  */
-export async function generateVoiceScript(content: string, apiKey: string): Promise<string> {
+export async function generateVoiceScript(content: string, apiKey: string): Promise<PodcastSegment[]> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); // Use efficient model for summarization
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" }); // Use Pro for better reasoning and conversation flow
 
     const prompt = `
-You are a charismatic Radio Host for "ProInsight AI".
-Your listener is a busy professional who wants to get the key insights from this blog post while driving or commuting.
+You are the scriptwriter for an engaging tech/business podcast called "ProInsight Audio".
+There are two hosts:
+- Host A (Main host, energetic, leads the topic)
+- Host B (Expert/Co-host, provides deep insights, calm)
 
 Task:
-Convert the following blog post into a 2-3 minute radio script (approx. 400-500 words).
-Do NOT include any stage directions like [Sound Effect], [Intro Music], or (Laughs).
-ONLY write the spoken text that the TTS engine should read.
-The tone should be professional yet conversational, engaging, and clear.
+Convert the following blog post into a conversational podcast script (approx 3-4 minutes).
+Do NOT include any stage directions or sound effects.
 
-Structure:
-1.  **Intro**: "안녕하세요, ProInsight AI 브리핑입니다. 오늘의 주제는..." (Briefly introduce the topic).
-2.  **Body**: Summarize the 3-4 most important key takeaways from the content. Use transition words like "첫 번째로," "또한," "마지막으로," to make it easy to follow aurally.
-3.  **Conclusion**: A brief wrap-up and a call to action (e.g., "더 자세한 내용은 본문을 참고해주세요.").
+Output Format:
+You MUST output ONLY a valid JSON array. Each element should be an object with:
+- "speaker": Either "A" or "B"
+- "text": The Korean spoken text for that segment. (Keep each segment short, 1-3 sentences max, to simulate real back-and-forth conversation).
 
 Input Blog Post:
 ${content}
-
-Output Script (Korean):
 `;
 
     try {
         const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        const responseText = await result.response.text();
+        
+        // Extract JSON using regex in case of markdown blocks
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) throw new Error("JSON parsing failed");
+        
+        const segments: PodcastSegment[] = JSON.parse(jsonMatch[0]);
+        return segments;
     } catch (error) {
         console.error("Voice Script Generation Error:", error);
-        throw new Error("오디오 대본 생성에 실패했습니다.");
+        throw new Error("오디오 대본(팟캐스트) 생성에 실패했습니다.");
     }
 }

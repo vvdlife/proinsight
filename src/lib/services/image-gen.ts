@@ -9,7 +9,7 @@ export async function generateBlogImage(prompt: string, apiKey: string): Promise
         // Assuming user has access or using updated Imagen integration if applicable.
         // For standard Gemini API, image generation model might be "imagen-3.0-generate-001" or similar
         // BUT per previous code "gemini-3-pro-image-preview" was used. Sticking to that.
-        const imageModel = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+        const imageModel = genAI.getGenerativeModel({ model: "gemini-3.1-flash-image-preview" });
 
         const result = await imageModel.generateContent(prompt);
         const response = await result.response;

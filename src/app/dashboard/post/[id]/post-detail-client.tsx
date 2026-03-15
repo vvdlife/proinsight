@@ -99,7 +99,7 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
 
     const handleGenerateAudio = async () => {
         setIsGeneratingAudio(true);
-        toast.info("오디오 브리핑 생성 시작...", { description: "대본 작성 및 음성 변환 중입니다. (약 10-20초 소요)" });
+        toast.info("팟캐스트 브리핑 생성 시작...", { description: "2명의 AI 호스트 대본 작성 및 음성 변환 중입니다. (약 30초 소요)" });
 
         try {
             const result = await generateVoiceBriefing(initialPost.id, content);

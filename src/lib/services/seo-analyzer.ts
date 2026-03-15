@@ -14,7 +14,7 @@ export async function analyzeSEO(content: string, topic: string, apiKey: string)
     const genAI = new GoogleGenerativeAI(apiKey);
     try {
         const model = genAI.getGenerativeModel({
-            model: "gemini-3-pro-preview", // Using Gemini 3 Pro for consistent high quality analysis
+            model: "gemini-3.1-pro-preview", // Using Gemini 3.1 Pro for consistent high quality analysis
             generationConfig: {
                 responseMimeType: "application/json",
             }

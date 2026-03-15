@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function generateImagePrompt(topic: string, apiKey: string): Promise<string> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
     const prompt = `
 You are a creative director for a tech blog.

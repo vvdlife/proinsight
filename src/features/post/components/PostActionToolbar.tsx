@@ -175,7 +175,7 @@ export function PostActionToolbar({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={onSmartCopy}>
                             <Copy className="h-4 w-4 mr-2" />
-                            <span>스마트 복사 (HTML)</span>
+                            <span>티스토리 호환 복사</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={onDownloadMarkdown}>
                             <FileText className="h-4 w-4 mr-2" />

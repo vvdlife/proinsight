@@ -17,7 +17,7 @@ export interface SEOStrategy {
 
 export async function planSEOStrategy(topic: string, apiKey: string): Promise<SEOStrategy> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview", generationConfig: { responseMimeType: "application/json" } });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview", generationConfig: { responseMimeType: "application/json" } });
 
     // 1. Gather Context via Tavily
     console.log(`🔎 SEO Planner: Researching topic "${topic}" via Tavily...`);

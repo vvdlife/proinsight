@@ -5,7 +5,7 @@ export async function refinePost(draft: string, topic: string, apiKey: string, e
     const genAI = new GoogleGenerativeAI(apiKey);
     // User requested Gemini 3 Pro (High Quality) for refining
     const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-preview", // Latest experimental model
+        model: "gemini-3.1-pro-preview", // Latest experimental model
         generationConfig: { temperature: 0.2 }
     });
 

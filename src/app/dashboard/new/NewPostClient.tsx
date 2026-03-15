@@ -79,7 +79,7 @@ export default function NewPostClient() {
             tone: undefined,
             length: undefined,
             includeImage: true,
-            model: "gemini-3-flash-preview",
+            model: "gemini-3.1-flash-lite-preview",
         },
     });
 
@@ -160,12 +160,29 @@ export default function NewPostClient() {
                     const progressPercent = 30 + Math.floor(((i) / totalSections) * 50);
                     setProgress(progressPercent);
 
-                    // Call Server Action
-                    const sectionResult = await generatePostStep2Section(data, section, finalContext, data.model, attachments);
+                    // Call Server Action with Retry Logic
+                    let sectionResult: { success: boolean; content?: string; message?: string } = { success: false, content: undefined, message: "초기화됨" };
+                    let retryCount = 0;
+                    const maxRetries = 2; // Total 3 attempts (1 initial + 2 retries)
+
+                    while (retryCount <= maxRetries) {
+                        sectionResult = await generatePostStep2Section(data, section, finalContext, data.model, attachments);
+                        
+                        if (sectionResult.success && sectionResult.content) {
+                            break; // Success! Exit retry loop
+                        }
+                        
+                        retryCount++;
+                        if (retryCount <= maxRetries) {
+                            addLog(`⚠️ Section ${i + 1} Failed. Retrying (${retryCount}/${maxRetries})...`);
+                            // Wait for 2 seconds before retrying (to handle rate limits)
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        }
+                    }
 
                     const content = (sectionResult.success && sectionResult.content)
                         ? sectionResult.content
-                        : `## ${section.heading}\n\n(작성 실패: ${sectionResult.message})`;
+                        : `## ${section.heading}\n\n(작성 실패: ${sectionResult.message || "최대 재시도 횟수 초과"})`;
 
                     sectionContents.push(content!);
 
@@ -384,12 +401,12 @@ export default function NewPostClient() {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                <SelectItem value="gemini-3-flash-preview">
-                                                                    <span className="font-medium">⚡ Gemini 3 Flash</span>
+                                                                <SelectItem value="gemini-3.1-flash-lite-preview">
+                                                                    <span className="font-medium">⚡ Gemini 3.1 Flash Lite</span>
                                                                     <span className="text-xs text-muted-foreground ml-2">(Preview / 초고속)</span>
                                                                 </SelectItem>
-                                                                <SelectItem value="gemini-3-pro-preview">
-                                                                    <span className="font-medium">🧠 Gemini 3 Pro</span>
+                                                                <SelectItem value="gemini-3.1-pro-preview">
+                                                                    <span className="font-medium">🧠 Gemini 3.1 Pro</span>
                                                                     <span className="text-xs text-muted-foreground ml-2">(고지능 / 느림)</span>
                                                                 </SelectItem>
                                                             </SelectContent>
