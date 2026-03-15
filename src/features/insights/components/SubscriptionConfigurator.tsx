@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { createSubscription, toggleSubscription } from "@/features/insights/actions/manage-subscription";
-import { Loader2, BellRing, BrainCircuit } from "lucide-react";
+import { createSubscription, toggleSubscription, triggerInsightGeneration } from "@/features/insights/actions/manage-subscription";
+import { Loader2, BellRing, BrainCircuit, Play } from "lucide-react";
 
 interface Props {
     subscription: any;
@@ -43,6 +43,20 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                 }
             } catch (error: any) {
                 toast.error("상태 변경 실패: " + error.message);
+            }
+        });
+    };
+
+    const handleTestTrigger = () => {
+        startTransition(async () => {
+            try {
+                toast.loading("테스트 리포트를 생성하고 발송 중입니다...", { id: "test-trigger" });
+                const res = await triggerInsightGeneration();
+                if (res.success) {
+                    toast.success(res.message || "테스트 발송 성공!", { id: "test-trigger" });
+                }
+            } catch (error: any) {
+                toast.error(error.message || "테스트 발송 중 오류가 발생했습니다.", { id: "test-trigger" });
             }
         });
     };
@@ -147,15 +161,27 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                         </div>
                     </div>
                 </div>
-                <CardFooter className="bg-muted/50 p-6 flex justify-between items-center rounded-b-xl border-t">
-                    <div className="flex items-center text-sm text-muted-foreground">
+                <CardFooter className="bg-muted/50 p-6 flex justify-between items-center rounded-b-xl border-t gap-4 flex-wrap">
+                    <div className="flex items-center text-sm text-muted-foreground mr-auto">
                         <BellRing className="h-4 w-4 mr-2" />
                         결과는 대시보드 위젯에 전시됩니다.
                     </div>
-                    <Button type="submit" disabled={isPending} className="min-w-[120px]">
-                        {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        {subscription ? "설정 업데이트" : "구독 시작하기"}
-                    </Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0 justify-end">
+                        <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={handleTestTrigger}
+                            disabled={isPending || !subscription} 
+                            className="min-w-[140px]"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                            수동 생성 테스트
+                        </Button>
+                        <Button type="submit" disabled={isPending} className="min-w-[120px]">
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            {subscription ? "설정 업데이트" : "구독 시작하기"}
+                        </Button>
+                    </div>
                 </CardFooter>
             </form>
         </Card>
