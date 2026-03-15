@@ -47,3 +47,27 @@ model SocialPost {
 
   @@unique([postId, platform])
 }
+
+model InsightSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  topic     String   // e.g., "Macro Economics", "Tech Trends", "Crypto"
+  frequency String   // "DAILY", "WEEKLY", "MONTHLY"
+  persona   String   // "AGGRESSIVE", "DEFENSIVE", "NEUTRAL"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reports   InsightReport[]
+}
+
+model InsightReport {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  userId         String
+  title          String
+  content        String   // Markdown with Mermaid diagrams
+  summary        String?  // 3-line key takeaways
+  audioUrl       String?  // Optional podcast briefing
+  createdAt      DateTime @default(now())
+  subscription   InsightSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Home, PenTool, Settings } from "lucide-react";
+import { FileText, Home, PenTool, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -31,6 +31,12 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
             icon: FileText,
             href: "/dashboard/posts",
             active: pathname.startsWith("/dashboard/posts"),
+        },
+        {
+            label: "인사이트 리서치",
+            icon: Sparkles,
+            href: "/dashboard/insights",
+            active: pathname.startsWith("/dashboard/insights"),
         },
         {
             label: "설정",
