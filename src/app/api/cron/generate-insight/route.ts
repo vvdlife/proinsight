@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateInsightContent } from "@/lib/services/insight-generator";
 import { sendEmailNotification } from "@/lib/services/notifications/email";
-import { sendTelegramMessage } from "@/lib/services/notifications/telegram";
+import { sendTelegramMessage, escapeTelegramHtml } from "@/lib/services/notifications/telegram";
 import { clerkClient } from "@clerk/nextjs/server";
 
 // Allow execution for up to 5 minutes (Pro plan max)
@@ -38,12 +38,15 @@ export async function GET() {
                 });
 
                 // 3. Dispatch Notifications
-                const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+                const domain = process.env.NEXT_PUBLIC_APP_URL 
+                    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
                 const reportUrl = `${domain}/dashboard/insights/${report.id}`;
 
                 // Telegram Notification
                 if (sub.telegramChatId) {
-                    const tgMessage = `🔔 <b>[ProInsight] 새로운 투자 리포트 도착</b>\n\n<b>${report.title}</b>\n\n<i>${report.summary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
+                    const safeTitle = escapeTelegramHtml(report.title);
+                    const safeSummary = escapeTelegramHtml(report.summary || "");
+                    const tgMessage = `🔔 <b>[ProInsight] 새로운 투자 리포트 도착</b>\n\n<b>${safeTitle}</b>\n\n<i>${safeSummary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
                     await sendTelegramMessage(sub.telegramChatId, tgMessage);
                 }
 

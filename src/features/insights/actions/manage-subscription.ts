@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 // Import services for manual trigger
 import { generateInsightContent } from "@/lib/services/insight-generator";
 import { sendEmailNotification } from "@/lib/services/notifications/email";
-import { sendTelegramMessage } from "@/lib/services/notifications/telegram";
+import { sendTelegramMessage, escapeTelegramHtml } from "@/lib/services/notifications/telegram";
 
 export async function createSubscription(formData: FormData) {
 
@@ -100,26 +100,38 @@ export async function triggerInsightGeneration() {
         });
 
         // 3. Dispatch Notifications
-        const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const domain = process.env.NEXT_PUBLIC_APP_URL 
+            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const reportUrl = `${domain}/dashboard/insights/${report.id}`;
+
+        console.log(`[InsightTrigger] Dispatching for userId: ${sub.userId}, domain: ${domain}`);
+        console.log(`[InsightTrigger] Sub Settings: Email=${sub.receiveEmail}, Telegram=${sub.telegramChatId ? 'YES' : 'NO'}`);
 
         let warningMessage = "";
 
         if (sub.telegramChatId) {
-            const tgMessage = `🔔 <b>[ProInsight] 수동 테스트 리포트 도착</b>\n\n<b>${report.title}</b>\n\n<i>${report.summary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
+            console.log(`[InsightTrigger] Sending Telegram to ${sub.telegramChatId}`);
+            const safeTitle = escapeTelegramHtml(report.title);
+            const safeSummary = escapeTelegramHtml(report.summary || "");
+            const tgMessage = `🔔 <b>[ProInsight] 수동 테스트 리포트 도착</b>\n\n<b>${safeTitle}</b>\n\n<i>${safeSummary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
             const tgRes = await sendTelegramMessage(sub.telegramChatId, tgMessage);
             if (!tgRes.success) {
+                console.error(`[InsightTrigger] Telegram Failed: ${tgRes.error}`);
                 warningMessage += `[텔레그램 실패: ${tgRes.error}] `;
+            } else {
+                console.log(`[InsightTrigger] Telegram Success`);
             }
         }
 
         if (sub.receiveEmail) {
+            console.log(`[InsightTrigger] Preparing Email for userId: ${sub.userId}`);
             try {
                 const client = await clerkClient();
                 const user = await client.users.getUser(sub.userId);
                 const userEmail = user.emailAddresses[0]?.emailAddress;
                 
                 if (userEmail) {
+                    console.log(`[InsightTrigger] Sending Email to ${userEmail}`);
                     const htmlTemplate = `
                         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
                             <h2 style="color: #333;">ProInsight AI Manual Test Briefing</h2>
@@ -134,13 +146,17 @@ export async function triggerInsightGeneration() {
                     `;
                     const emailRes = await sendEmailNotification(userEmail, `[ProInsight TEST] ${report.title}`, htmlTemplate);
                     if (!emailRes.success) {
+                        console.error(`[InsightTrigger] Email Failed: ${emailRes.error}`);
                         warningMessage += `[이메일 발송 실패: ${emailRes.error}] `;
+                    } else {
+                        console.log(`[InsightTrigger] Email Success`);
                     }
                 } else {
+                    console.error(`[InsightTrigger] No Email found in Clerk for user`);
                     warningMessage += `[이메일 주소 없음] `;
                 }
             } catch (clerkErr: any) {
-                console.error("Failed to fetch user email for notification:", clerkErr);
+                console.error(`[InsightTrigger] Clerk Error: ${clerkErr.message}`);
                 warningMessage += `[계정 이메일 조회 실패] `;
             }
         }

@@ -1,3 +1,10 @@
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 export async function sendTelegramMessage(chatId: string, message: string) {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     
@@ -14,13 +21,14 @@ export async function sendTelegramMessage(chatId: string, message: string) {
             body: JSON.stringify({
                 chat_id: chatId,
                 text: message,
-                parse_mode: 'HTML', // Allows bolding and basic formatting
+                parse_mode: 'HTML',
             }),
         });
 
         if (!response.ok) {
-            const errList = await response.text();
-            throw new Error(`Telegram API Error: ${errList}`);
+            const errBody = await response.text();
+            console.error("Telegram API Error Response:", errBody);
+            throw new Error(`Telegram API Error: ${errBody}`);
         }
 
         return { success: true };
@@ -29,3 +37,5 @@ export async function sendTelegramMessage(chatId: string, message: string) {
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }
+
+export { escapeHtml as escapeTelegramHtml };
