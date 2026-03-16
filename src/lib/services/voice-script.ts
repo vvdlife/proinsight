@@ -14,7 +14,7 @@ export interface PodcastSegment {
  */
 export async function generateVoiceScript(content: string, apiKey: string): Promise<PodcastSegment[]> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" }); // Use Pro for better reasoning and conversation flow
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" }); // Use Flash Lite for speed and cost-efficiency
 
     const prompt = `
 You are the scriptwriter for an engaging tech/business podcast called "ProInsight Audio".

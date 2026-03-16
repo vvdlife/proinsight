@@ -29,7 +29,7 @@ export async function generateInsightContent(userId: string, topic: string, pers
 
     // 2. Setup Gemini Model
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
     // Define persona instructions
     let personaInstruction = "객관적이고 중립적인 시각으로 거시 경제와 시장에 미치는 영향을 균형있게 분석하세요. (Neutral)";

@@ -301,7 +301,7 @@ export async function generateBlogImage(prompt: string, apiKey: string): Promise
 
 export async function optimizeContent(content: string, suggestions: string[], apiKey: string): Promise<string> {
     try {
-        const model = getGeminiModel(apiKey, "gemini-3.1-pro-preview", 0.2);
+        const model = getGeminiModel(apiKey, "gemini-3.1-flash-lite-preview", 0.2);
 
         const prompt = `
         You are a Professional Content Editor.
@@ -375,7 +375,7 @@ export interface RecommendedTopic {
 }
 
 export async function recommendTopics(searchContext: string | undefined, category: string, apiKey: string): Promise<RecommendedTopic[]> {
-    const model = getGeminiModel(apiKey, "gemini-3.1-pro-preview", 0.7, "application/json");
+    const model = getGeminiModel(apiKey, "gemini-3.1-flash-lite-preview", 0.7, "application/json");
 
     const prompt = `
     You are a Tech Trend Analyst and Content Strategist.
@@ -429,7 +429,7 @@ export async function generateSocialContent(
     platform: 'instagram' | 'twitter' | 'linkedin',
     apiKey: string
 ): Promise<SocialContentResult> {
-    const model = getGeminiModel(apiKey, "gemini-3.1-pro-preview", 0.7, "application/json");
+    const model = getGeminiModel(apiKey, "gemini-3.1-flash-lite-preview", 0.7, "application/json");
 
     let promptInfo = "";
     if (platform === 'instagram') {

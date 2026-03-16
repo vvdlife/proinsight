@@ -412,7 +412,7 @@ export default function NewPostClient() {
                                                             </SelectContent>
                                                         </Select>
                                                         <FormDescription>
-                                                            Pro 모델은 품질이 높지만 60초 이상 소요될 수 있습니다.
+                                                            Flash Lite 모델은 품질이 준수하면서도 응답 속도가 매우 빠릅니다. (Pro 대비 약 3~5배 빠름)
                                                         </FormDescription>
                                                         <FormMessage />
                                                     </FormItem>
