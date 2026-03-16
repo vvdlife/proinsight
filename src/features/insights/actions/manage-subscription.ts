@@ -103,9 +103,14 @@ export async function triggerInsightGeneration() {
         const domain = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const reportUrl = `${domain}/dashboard/insights/${report.id}`;
 
+        let warningMessage = "";
+
         if (sub.telegramChatId) {
             const tgMessage = `🔔 <b>[ProInsight] 수동 테스트 리포트 도착</b>\n\n<b>${report.title}</b>\n\n<i>${report.summary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
-            await sendTelegramMessage(sub.telegramChatId, tgMessage);
+            const tgRes = await sendTelegramMessage(sub.telegramChatId, tgMessage);
+            if (!tgRes.success) {
+                warningMessage += `[텔레그램 실패: ${tgRes.error}] `;
+            }
         }
 
         if (sub.receiveEmail) {
@@ -127,15 +132,26 @@ export async function triggerInsightGeneration() {
                             <a href="${reportUrl}" style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-weight: bold;">전체 리포트 읽기 & AI 라디오 듣기</a>
                         </div>
                     `;
-                    await sendEmailNotification(userEmail, `[ProInsight TEST] ${report.title}`, htmlTemplate);
+                    const emailRes = await sendEmailNotification(userEmail, `[ProInsight TEST] ${report.title}`, htmlTemplate);
+                    if (!emailRes.success) {
+                        warningMessage += `[이메일 발송 실패: ${emailRes.error}] `;
+                    }
+                } else {
+                    warningMessage += `[이메일 주소 없음] `;
                 }
-            } catch (clerkErr) {
+            } catch (clerkErr: any) {
                 console.error("Failed to fetch user email for notification:", clerkErr);
+                warningMessage += `[계정 이메일 조회 실패] `;
             }
         }
 
         revalidatePath("/dashboard/insights");
-        return { success: true, message: "리포트 생성 및 알림 발송 완료!" };
+        
+        if (warningMessage) {
+            return { success: false, error: `리포트는 생성되었으나 알림 전송에 실패했습니다: ${warningMessage}` };
+        }
+        
+        return { success: true, message: "리포트 생성 및 전송 완료!" };
 
     } catch (error: any) {
         console.error("Manual Trigger Error:", error);
