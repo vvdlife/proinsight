@@ -54,9 +54,11 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                 const res = await triggerInsightGeneration();
                 if (res.success) {
                     toast.success(res.message || "테스트 발송 성공!", { id: "test-trigger" });
+                } else {
+                    toast.error(res.error || "테스트 발송 중 오류가 발생했습니다.", { id: "test-trigger" });
                 }
             } catch (error: any) {
-                toast.error(error.message || "테스트 발송 중 오류가 발생했습니다.", { id: "test-trigger" });
+                toast.error(error.message || "시스템 오류가 발생했습니다.", { id: "test-trigger" });
             }
         });
     };
