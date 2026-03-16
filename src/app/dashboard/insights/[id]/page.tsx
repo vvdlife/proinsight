@@ -9,8 +9,10 @@ interface Props {
 }
 
 export default async function InsightDetailPage({ params }: Props) {
+    const { id } = await params;
+
     const report = await prisma.insightReport.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: { subscription: true }
     });
 
