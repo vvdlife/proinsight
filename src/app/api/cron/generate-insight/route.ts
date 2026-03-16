@@ -24,7 +24,7 @@ export async function GET() {
         for (const sub of subscriptions) {
             try {
                 // Generate content using Tavily + Gemini
-                const reportContent = await generateInsightContent(sub.topic, sub.persona);
+                const reportContent = await generateInsightContent(sub.userId, sub.topic, sub.persona);
                 
                 // Save to database
                 const report = await prisma.insightReport.create({

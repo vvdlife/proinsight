@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { searchTavily } from "./tavily";
+import { prisma } from "@/lib/db";
 
 export interface InsightResult {
     title: string;
@@ -11,9 +12,10 @@ export interface InsightResult {
  * Searches the web and generates a highly structured investment report
  * mirroring a professional analyst report with strict Markdown requirements.
  */
-export async function generateInsightContent(topic: string, persona: string): Promise<InsightResult> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY is not set.");
+export async function generateInsightContent(userId: string, topic: string, persona: string): Promise<InsightResult> {
+    const settings = await prisma.userSettings.findUnique({ where: { userId } });
+    const apiKey = settings?.apiKey || process.env.GOOGLE_GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not set in user settings or environment variables.");
 
     // 1. Search Tavily for the latest news on the topic
     const searchData = await searchTavily(`최신 금융 뉴스 및 분석 리포트: ${topic}`);

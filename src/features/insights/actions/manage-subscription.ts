@@ -86,7 +86,7 @@ export async function triggerInsightGeneration() {
 
     try {
         // 1. Generate Content
-        const reportContent = await generateInsightContent(sub.topic, sub.persona);
+        const reportContent = await generateInsightContent(sub.userId, sub.topic, sub.persona);
         
         // 2. Save
         const report = await prisma.insightReport.create({
