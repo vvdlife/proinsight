@@ -214,12 +214,24 @@ export async function generatePostStep3Finalize(
             referencesSection += "No references detected from search context.\n";
         }
 
+        const disclaimer = `
+> ⚖️ **Investment Disclaimer (투자 면책 고지)**
+> 
+> 본 콘텐츠는 제공자가 주식 시장의 공개된 지표와 매크로 데이터를 바탕으로 분석한 정보성 분석 글이며, 특정 종목에 대한 매수 또는 매도 추천을 목적으로 하지 않습니다. 
+> 
+> 본 글에 포함된 수치, 전망 및 분석 결과는 미래의 수익을 보장하지 않으며, 거시경제 환경 및 정부 정책(관세, 통화정책 등)의 변동에 따라 언제든지 달라질 수 있습니다. 모든 투자 결정의 최종 책임은 투자자 본인에게 있으며, 본 콘텐츠는 어떠한 경우에도 투자 결과에 대한 법적 책임 소지의 증빙자료로 사용될 수 없습니다. 보수적인 분할 매수 관점과 철저한 리스크 관리를 권장합니다.
+`.trim();
+
         const finalContent = `
 # ${outline.title}
 
 ${sectionContents.join("\n\n")}
 
 ${referencesSection}
+
+---
+
+${disclaimer}
 `;
 
         const schemaMarkup = generateJSONLD(seoStrategy, finalContent);
