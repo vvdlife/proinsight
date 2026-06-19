@@ -25,7 +25,7 @@
 - **Styling**: Tailwind CSS, Shadcn/UI
 - **Database**: PostgreSQL (Prisma ORM)
 - **Auth**: Clerk
-- **AI Models**: Google Gemini 1.5 Pro / 3 Pro Preview
+- **AI Models**: Google Gemini 3.5 Flash
 
 ## 🚀 시작하기
 

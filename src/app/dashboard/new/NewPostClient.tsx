@@ -79,7 +79,7 @@ export default function NewPostClient() {
             tone: undefined,
             length: undefined,
             includeImage: true,
-            model: "gemini-3.1-flash-lite-preview",
+            model: "gemini-3.5-flash",
         },
     });
 
@@ -167,11 +167,11 @@ export default function NewPostClient() {
 
                     while (retryCount <= maxRetries) {
                         sectionResult = await generatePostStep2Section(data, section, finalContext, data.model, attachments);
-                        
+
                         if (sectionResult.success && sectionResult.content) {
                             break; // Success! Exit retry loop
                         }
-                        
+
                         retryCount++;
                         if (retryCount <= maxRetries) {
                             addLog(`⚠️ Section ${i + 1} Failed. Retrying (${retryCount}/${maxRetries})...`);
@@ -401,12 +401,12 @@ export default function NewPostClient() {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                <SelectItem value="gemini-3.1-flash-lite-preview">
-                                                                    <span className="font-medium">⚡ Gemini 3.1 Flash Lite</span>
+                                                                <SelectItem value="gemini-3.5-flash">
+                                                                    <span className="font-medium">⚡ Gemini 3.5 Flash</span>
                                                                     <span className="text-xs text-muted-foreground ml-2">(Preview / 초고속)</span>
                                                                 </SelectItem>
-                                                                <SelectItem value="gemini-3.1-pro-preview">
-                                                                    <span className="font-medium">🧠 Gemini 3.1 Pro</span>
+                                                                <SelectItem value="gemini-3.5-flash">
+                                                                    <span className="font-medium">🧠 Gemini 3.5 Flash</span>
                                                                     <span className="text-xs text-muted-foreground ml-2">(고지능 / 느림)</span>
                                                                 </SelectItem>
                                                             </SelectContent>

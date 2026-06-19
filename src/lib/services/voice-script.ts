@@ -14,7 +14,7 @@ export interface PodcastSegment {
  */
 export async function generateVoiceScript(content: string, apiKey: string): Promise<PodcastSegment[]> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" }); // Use Flash Lite for speed and cost-efficiency
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" }); // Use Flash Lite for speed and cost-efficiency
 
     const prompt = `
 You are the scriptwriter for an engaging tech/business podcast called "ProInsight Audio".
@@ -38,11 +38,11 @@ ${content}
     try {
         const result = await model.generateContent(prompt);
         const responseText = await result.response.text();
-        
+
         // Extract JSON using regex in case of markdown blocks
         const jsonMatch = responseText.match(/\[[\s\S]*\]/);
         if (!jsonMatch) throw new Error("JSON parsing failed");
-        
+
         const segments: PodcastSegment[] = JSON.parse(jsonMatch[0]);
         return segments;
     } catch (error) {

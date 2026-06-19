@@ -19,7 +19,7 @@ export async function generateInsightContent(userId: string, topic: string, pers
 
     // 1. Search Tavily for the latest news on the topic
     const searchData = await searchTavily(`최신 금융 뉴스 및 분석 리포트: ${topic}`);
-    
+
     let searchContext = "";
     if (searchData && searchData.results && searchData.results.length > 0) {
         searchContext = searchData.results
@@ -29,7 +29,7 @@ export async function generateInsightContent(userId: string, topic: string, pers
 
     // 2. Setup Gemini Model
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
     // Define persona instructions
     let personaInstruction = "객관적이고 중립적인 시각으로 거시 경제와 시장에 미치는 영향을 균형있게 분석하세요. (Neutral)";
@@ -73,7 +73,7 @@ ${searchContext || "No internet context found. Rely on internal knowledge."}
     try {
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-        
+
         // Extract JSON
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
