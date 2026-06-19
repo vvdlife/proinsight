@@ -164,10 +164,10 @@ STRICT INSTRUCTIONS:
    - **Trustworthiness**: Maintain a neutral, objective tone and justify conclusions.
 4. **Features**:
    - **핵심 요약 (Summary)**: Start the section with a concise "핵심 요약" summary if the section is complex or lengthy.
-   - **Callouts**: Use GitHub Alert syntax for important notes or tips.
-     > [!NOTE] This is a note.
-     > [!TIP] This is a pro tip.
-     > [!WARNING] Be careful with this.
+   - **Callouts**: Do NOT use GitHub-style callout syntax (e.g., \`> [!WARNING]\`, \`> [!TIP]\`, \`> [!NOTE]\`). Instead, combine standard Markdown blockquotes with emojis to make it intuitive and direct for Korean readers:
+      - Warning: \`> ⚠️ **주의:** [내용]\`
+      - Tip: \`> 💡 **팁:** [내용]\`
+      - Note/Notice: \`> 📌 **참고:** [내용]\`
    - **Tables**: Use Markdown tables for ANY comparison or structured data.
    - **Diagrams**: Use \`mermaid\` code blocks to visualize processes, flows, or architectures.
      **STRATEGIC DIAGRAMMING RULES (MUST FOLLOW):**
@@ -192,11 +192,10 @@ STRICT INSTRUCTIONS:
          B --> C["📄 초안 생성"]:::data
        end
      \`\`\`
-   - **FAQ Schema**:
+   - **FAQ Section**:
      - IF and ONLY IF this section is "FAQ" or "자주 묻는 질문":
-       - Write the Q&A in standard text first.
-       - THEN, append a valid JSON-LD \`<script type="application/ld+json">\` block for "FAQPage" schema.
-       - Ensure the JSON-LD is properly formatted inside a \`html\` code block or plain text that doesn't break markdown rendering.
+       - Write the Q&A in standard text format.
+       - **CRITICAL**: Do NOT generate or append any <script> tags, HTML blocks, or JSON-LD structured data inside this markdown body. The structured data is handled separately.
 5. Incorporate deep insights from the 'search_context'.
 6. If information is missing, admit it or focus on general principles.
 7. Tone: ${data.tone}
@@ -258,6 +257,14 @@ export async function generateBlogPost(data: PostFormValues, searchContext: stri
         referencesSection += "No references detected from search context.\n";
     }
 
+    const disclaimer = `
+> ⚖️ **Investment Disclaimer (투자 면책 고지)**
+> 
+> 본 콘텐츠는 제공자가 주식 시장의 공개된 지표와 매크로 데이터를 바탕으로 분석한 정보성 분석 글이며, 특정 종목에 대한 매수 또는 매도 추천을 목적으로 하지 않습니다. 
+> 
+> 본 글에 포함된 수치, 전망 및 분석 결과는 미래의 수익을 보장하지 않으며, 거시경제 환경 및 정부 정책(관세, 통화정책 등)의 변동에 따라 언제든지 달라질 수 있습니다. 모든 투자 결정의 최종 책임은 투자자 본인에게 있으며, 본 콘텐츠는 어떠한 경우에도 투자 결과에 대한 법적 책임 소지의 증빙자료로 사용될 수 없습니다. 보수적인 분할 매수 관점과 철저한 리스크 관리를 권장합니다.
+`.trim();
+
     // Assemble final markdown
     const finalContent = `
 # ${outline.title}
@@ -265,6 +272,10 @@ export async function generateBlogPost(data: PostFormValues, searchContext: stri
 ${sectionContents.join("\n\n")}
 
 ${referencesSection}
+
+---
+
+${disclaimer}
 `;
 
     return finalContent;
@@ -311,14 +322,15 @@ export async function optimizeContent(content: string, suggestions: string[], ap
         ${suggestions.map(s => `- ${s}`).join("\n")}
 
         CRITICAL CONSTRAINTS (Failure to follow these will break the app):
-        1. **Preserve Markdwon**: Do NOT change the markdown structure (headings, lists, bold, italic).
+        1. **Preserve Markdown**: Do NOT change the markdown structure (headings, lists, bold, italic).
         2. **Preserve Special Syntax**:
            - user-defined components (if any)
            - Mermaid Diagrams (\`\`\`mermaid ... \`\`\`) MUST be kept EXACTLY as is.
            - Tables MUST be kept as is.
-           - Callouts (> [!NOTE]) MUST be kept as is.
-        3. **No Hallucination**: Do NOT add new facts or change the meaning of the content. Only improve the styling, clarity, and keyword usage.
-        4. **Language**: Keep the content in KOREAN.
+           - Callouts (\`> ⚠️ **주의:**\`, \`> 💡 **팁:**\`, \`> 📌 **참고:**\`) MUST be kept as is.
+        3. **Preserve Disclaimer**: If there is an Investment Disclaimer (투자 면책 고지) block at the bottom, you MUST preserve it exactly as is. Do not modify or remove it.
+        4. **No Hallucination**: Do NOT add new facts or change the meaning of the content. Only improve the styling, clarity, and keyword usage.
+        5. **Language**: Keep the content in KOREAN.
 
         Original Content:
         ${content}

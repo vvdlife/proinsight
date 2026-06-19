@@ -62,7 +62,7 @@ The 'content' string MUST be a complete markdown document that strictly includes
 2. At least one JSON/Markdown Table comparing sectors (e.g., Beneficiaries vs. Victims).
 3. At least one \`mermaid\` code block diagram (graph LR or TD) showing macroeconomic impact or capital flow. 
    (CRITICAL: Do NOT wrap the mermaid block inside another outer markdown code block. Use exactly \`\`\`mermaid and \`\`\`)
-4. Use GitHub Alerts like \`> [!WARNING]\` or \`> [!TIP]\` for important warnings and strategies.
+4. Use standard Markdown blockquotes with emojis for important warnings and strategies (e.g., > ⚠️ **주의:** [내용] or > 💡 **팁:** [내용]). Do NOT use GitHub-style callouts like > [!WARNING].
 5. Answer 2-3 FAQ questions at the bottom.
 Do not include the title or the Key Takeaways in the 'content' body, as they will be rendered separately.
 Write entirely in Professional Korean.
