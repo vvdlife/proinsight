@@ -4,61 +4,32 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PodcastSegment } from "./voice-script";
 
 /**
- * Helper function to concatenate multiple WAV buffers into a single valid, playable WAV buffer.
- * It parses the WAV files to locate the "data" subchunk, combines only the raw PCM bytes,
- * and updates the RIFF/data chunk sizes in the primary WAV header.
+ * Helper function to encode raw 16-bit PCM mono data into a valid WAV file buffer.
+ * Gemini 3.1 Flash TTS outputs raw PCM at 24kHz.
  */
-function concatWavBuffers(buffers: Buffer[]): Buffer {
-    if (buffers.length === 0) return Buffer.alloc(0);
-    if (buffers.length === 1) return buffers[0];
+function encodeWav(pcmBuffer: Buffer, sampleRate: number = 24000): Buffer {
+    const header = Buffer.alloc(44);
 
-    // Helper to locate the "data" subchunk offset and size in a WAV buffer
-    const findDataChunk = (buf: Buffer) => {
-        let offset = 12; // Start after "RIFF" + size + "WAVE"
-        while (offset < buf.length - 8) {
-            const chunkId = buf.toString("ascii", offset, offset + 4);
-            const chunkSize = buf.readUInt32LE(offset + 4);
-            if (chunkId === "data") {
-                return { headerSize: offset + 8, dataSize: chunkSize };
-            }
-            offset += 8 + chunkSize; // 8 bytes for ID and size field
-        }
-        throw new Error("WAV 파일에서 data chunk를 찾을 수 없습니다.");
-    };
+    // 1. "RIFF" chunk descriptor
+    header.write("RIFF", 0);
+    header.writeUInt32LE(36 + pcmBuffer.length, 4); // File size - 8
+    header.write("WAVE", 8);
 
-    try {
-        const firstWavInfo = findDataChunk(buffers[0]);
-        const header = buffers[0].subarray(0, firstWavInfo.headerSize);
+    // 2. "fmt " subchunk (describes the format)
+    header.write("fmt ", 12);
+    header.writeUInt32LE(16, 16);             // Subchunk1 size (16 for PCM)
+    header.writeUInt16LE(1, 20);              // Audio format (1 = PCM)
+    header.writeUInt16LE(1, 22);              // Number of channels (1 = Mono)
+    header.writeUInt32LE(sampleRate, 24);      // Sample rate (24000)
+    header.writeUInt32LE(sampleRate * 2, 28);    // Byte rate (SampleRate * 1 channel * 16 bits / 8 = SampleRate * 2)
+    header.writeUInt16LE(2, 32);              // Block align (channels * bits/8 = 2)
+    header.writeUInt16LE(16, 34);             // Bits per sample (16)
 
-        const pcmDataParts: Buffer[] = [];
-        let totalDataSize = 0;
+    // 3. "data" subchunk (contains the raw PCM data)
+    header.write("data", 36);
+    header.writeUInt32LE(pcmBuffer.length, 40); // Data size
 
-        for (const buf of buffers) {
-            const info = findDataChunk(buf);
-            const pcm = buf.subarray(info.headerSize, info.headerSize + info.dataSize);
-            pcmDataParts.push(pcm);
-            totalDataSize += pcm.length;
-        }
-
-        const combinedPcm = Buffer.concat(pcmDataParts);
-
-        // Allocate final buffer and assemble WAV file
-        const finalBuffer = Buffer.alloc(firstWavInfo.headerSize + totalDataSize);
-        header.copy(finalBuffer);
-        combinedPcm.copy(finalBuffer, firstWavInfo.headerSize);
-
-        // Update RIFF chunk size at offset 4: (total file size - 8)
-        finalBuffer.writeUInt32LE(finalBuffer.length - 8, 4);
-
-        // Update "data" subchunk size at offset (headerSize - 4)
-        finalBuffer.writeUInt32LE(totalDataSize, firstWavInfo.headerSize - 4);
-
-        return finalBuffer;
-    } catch (error) {
-        console.error("WAV Concatenation Error:", error);
-        // Fallback to simple concat if parsing fails
-        return Buffer.concat(buffers);
-    }
+    return Buffer.concat([header, pcmBuffer]);
 }
 
 /**
@@ -110,8 +81,9 @@ export async function generateSpeech(segments: PodcastSegment[], apiKey?: string
             buffers.push(buffer);
         }
 
-        // Concatenate WAV buffers cleanly
-        return concatWavBuffers(buffers);
+        // Concatenate PCM buffers and encode as a standard WAV file
+        const combinedPcm = Buffer.concat(buffers);
+        return encodeWav(combinedPcm, 24000);
 
     } catch (error) {
         console.error("TTS Generation Error Details:", error);
