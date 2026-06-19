@@ -388,6 +388,7 @@ export interface RecommendedTopic {
 
 export async function recommendTopics(searchContext: string | undefined, category: string, apiKey: string): Promise<RecommendedTopic[]> {
     const model = getGeminiModel(apiKey, "gemini-3.5-flash", 0.7, "application/json");
+    const currentYear = new Date().getFullYear();
 
     const prompt = `
     You are a Tech Trend Analyst and Content Strategist.
@@ -397,11 +398,11 @@ export async function recommendTopics(searchContext: string | undefined, categor
 
     search_context:
     """
-    ${searchContext || "No specific context provided. Use general knowledge about 2024-2025 trends."}
+    ${searchContext || `No specific context provided. Use general knowledge about current trends (current year is ${currentYear}).`}
     """
 
     INSTRUCTIONS:
-    1. Analyze the 'search_context' to identify rising trends, hot debates, or new technologies.
+    1. Analyze the 'search_context' to identify rising trends, hot debates, or new technologies. Ensure that topics recommended are highly relevant to the current year: ${currentYear}.
     2. Generate 5 distinct potential blog topics.
     3. **Criteria for Good Topics**:
        - Provocative or Insightful (Not just "What is AI?", but "Why AI Agents are replacing Chatbots").

@@ -24,9 +24,10 @@ export async function recommendTopicsAction(category: string): Promise<Recommend
     try {
         console.log(`🔍 Searching trends for category: ${category}...`);
 
+        const currentYear = new Date().getFullYear();
         // 1. Search for trends (Deep Research)
         // We use a specific query designed to catch latest news and discussions
-        const query = `${category} trends news 2025 hot topics issues`;
+        const query = `${category} trends news ${currentYear} hot topics issues`;
         const searchResponse = await searchWeb(query, "basic"); // Use basic search for speed
 
         // searchWeb returns { results: [...] }
