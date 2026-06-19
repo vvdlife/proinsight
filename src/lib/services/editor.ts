@@ -46,7 +46,7 @@ export async function refinePost(draft: string, topic: string, apiKey: string, e
     `;
 
     try {
-        console.log("🧐 Editor-in-Chief: Reviewing and polishing (Gemini 3 Pro)...");
+        console.log("🧐 Editor-in-Chief: Reviewing and polishing (Gemini 3.5 Flash)...");
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const refinedContent = response.text();
