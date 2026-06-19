@@ -88,7 +88,7 @@ export function AudioPlayer({ src, className }: AudioPlayerProps) {
             const a = document.createElement("a");
             a.style.display = "none";
             a.href = url;
-            a.download = "voice-briefing.mp3";
+            a.download = "voice-briefing.wav";
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -112,7 +112,7 @@ export function AudioPlayer({ src, className }: AudioPlayerProps) {
                         Audio Briefing
                     </span>
                     <div className="flex items-center gap-2">
-                        <button onClick={handleDownload} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800" title="Download MP3">
+                        <button onClick={handleDownload} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800" title="Download WAV">
                             <Download className="h-3 w-3" />
                         </button>
                         <button onClick={changeSpeed} className="hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800">

@@ -16,44 +16,23 @@ export async function generateVoiceBriefing(postId: string, content: string) {
     // 1. Get User API Keys
     const settings = await prisma.userSettings.findUnique({
         where: { userId },
-        select: { apiKey: true, openaiApiKey: true },
+        select: { apiKey: true },
     });
 
     if (!settings?.apiKey) {
         return { success: false, message: "Gemini API Key가 설정되지 않았습니다. 설정 페이지에서 등록해주세요." };
     }
 
-    // 2. Validate OpenAI Key (User Settings > Env)
-    // Priority: DB Setting (User override) -> Env Variable (Server default)
-    const openaiKey = settings.openaiApiKey || process.env.OPENAI_API_KEY;
-
-    console.log("🎙️ [Debug] Checking OpenAI Key Resolution:", {
-        envExists: !!process.env.OPENAI_API_KEY,
-        dbExists: !!settings.openaiApiKey,
-        finalKeyUsed: !!openaiKey
-    });
-
-    if (!openaiKey) {
-        return { success: false, message: "OpenAI API Key가 없습니다. 설정 페이지에서 등록해주세요." };
-    }
-
-    // Temporarily inject key into process.env for tts.ts library (or refactor logic)
-    // Better approach: Pass key to service functions.
-    // However, existing tts.ts relies on process.env or new instance.
-    // Let's refactor tts.ts slightly or handle logic here.
-
-    // For now, let's update tts.ts to accept key as argument.
-
     try {
-        console.log("🎙️ [Voice] Step 1: Generating Script...");
+        console.log("🎙️ [Voice] Step 1: Generating Script (Gemini 3.5 Flash)...");
         const script = await generateVoiceScript(content, settings.apiKey);
 
-        console.log("🎙️ [Voice] Step 2: Generating Audio (TTS)...");
-        const audioBuffer = await generateSpeech(script, openaiKey);
+        console.log("🎙️ [Voice] Step 2: Generating Audio (Gemini 3.1 Flash TTS)...");
+        const audioBuffer = await generateSpeech(script, settings.apiKey);
 
         console.log("🎙️ [Voice] Step 3: Uploading to Blob...");
-        // Use Vercel Blob for storage
-        const filename = `voice-briefing-${postId}-${Date.now()}.mp3`;
+        // Use Vercel Blob for storage - use .wav for Gemini TTS output
+        const filename = `voice-briefing-${postId}-${Date.now()}.wav`;
         const blob = await put(filename, audioBuffer, {
             access: 'public',
         });
