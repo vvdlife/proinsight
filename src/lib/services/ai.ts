@@ -162,13 +162,12 @@ STRICT INSTRUCTIONS:
    - **Expertise**: Use precise technical terminology and provide deep analysis.
    - **Authoritativeness**: Actively cite sources from 'search_context' using inline brackets like [1], [2].
    - **Trustworthiness**: Maintain a neutral, objective tone and justify conclusions.
-4. **Features**:
-   - **핵심 요약 (Summary)**: Start the section with a concise "핵심 요약" summary if the section is complex or lengthy.
-   - **Callouts**: Do NOT use GitHub-style callout syntax (e.g., \`> [!WARNING]\`, \`> [!TIP]\`, \`> [!NOTE]\`). Instead, combine standard Markdown blockquotes with emojis to make it intuitive and direct for Korean readers:
+   - **핵심 요약 (Summary)**: Start the section with a concise "핵심 요약" summary if the section is complex or lengthy. **CRITICAL**: Do NOT write a "핵심 요약" or summary block if the current section is immediately following the "Key Takeaways (3줄 요약)" section, or if it would result in the summary block being within 3 paragraphs of the "Key Takeaways" block. Ensure at least a 3-paragraph distance between any two summary/takeaway blocks.
+   - **Callouts**: Do NOT use GitHub-style callout syntax (e.g., \`> [!WARNING]\`, \`> [!TIP]\`, \`> [!NOTE]\`). Instead, combine standard Markdown blockquotes with emojis and bold headlines to make it intuitive and direct for Korean readers:
       - Warning: \`> ⚠️ **주의:** [내용]\`
       - Tip: \`> 💡 **팁:** [내용]\`
       - Note/Notice: \`> 📌 **참고:** [내용]\`
-   - **Tables**: Use Markdown tables for ANY comparison or structured data.
+   - **Tables**: Use Markdown tables for ANY comparison or structured data. **CRITICAL**: Every row (including the header, separator, and data rows) MUST start and end with a pipe (\`|\`) character. The separator row immediately below the header must contain standard alignment indicators (e.g., \`| :--- | :---: | :--- |\`).
    - **Diagrams**: Use \`mermaid\` code blocks to visualize processes, flows, or architectures.
      **STRATEGIC DIAGRAMMING RULES (MUST FOLLOW):**
      1. **Direction**: Use \`graph LR\` for sequential processes (Time/Step), \`graph TD\` for hierarchies/structures.
@@ -177,19 +176,19 @@ STRICT INSTRUCTIONS:
         - \`:::ai\` for AI/Automated steps (Blue)
         - \`:::human\` for Human input/Review (Purple)
         - \`:::data\` for Documents/Data/Output (Green)
-     4. **Visuals**: Add relevant EMOJIS to every node label (e.g., "🤖 분석", "📄 보고서").
+     4. **CRITICAL (No Emojis/Special Characters)**: Do NOT include any emojis (e.g., 👤, 📉, ⚖️, 🤖) or special characters in the node text/labels or subgraph titles. Only use pure Korean, English, and numeric text.
      5. **Syntax**:
-        - **Quoting**: YOU MUST DOUBLE-QUOTE ALL KOREAN LABELS. (e.g., \`A["🤖 AI 분석"]\`)
+        - **Quoting**: YOU MUST DOUBLE-QUOTE ALL KOREAN LABELS. (e.g., \`A["AI 분석"]\`)
         - **Edge Labels**: Use \`-- "Label" -->\` syntax.
      
      Example:
      \`\`\`mermaid
      graph LR
-       subgraph Planning ["📅 기획 단계"]
-         A["👤 사용자 입력"]:::human -- "주제 설정" --> B["🤖 데이터 분석"]:::ai
+       subgraph Planning ["기획 단계"]
+         A["사용자 입력"]:::human -- "주제 설정" --> B["데이터 분석"]:::ai
        end
-       subgraph Production ["🏭 제작 단계"]
-         B --> C["📄 초안 생성"]:::data
+       subgraph Production ["제작 단계"]
+         B --> C["초안 생성"]:::data
        end
      \`\`\`
    - **FAQ Section**:
@@ -325,8 +324,8 @@ export async function optimizeContent(content: string, suggestions: string[], ap
         1. **Preserve Markdown**: Do NOT change the markdown structure (headings, lists, bold, italic).
         2. **Preserve Special Syntax**:
            - user-defined components (if any)
-           - Mermaid Diagrams (\`\`\`mermaid ... \`\`\`) MUST be kept EXACTLY as is.
-           - Tables MUST be kept as is.
+           - Mermaid Diagrams (\`\`\`mermaid ... \`\`\`) MUST be kept EXACTLY as is. In case of editing or adding, Mermaid node labels MUST NOT contain emojis or special characters (only Korean, English, numbers allowed).
+           - Tables MUST be kept as is, ensuring every row starts and ends with a pipe (\`|\`) and standard alignment separators are used.
            - Callouts (\`> ⚠️ **주의:**\`, \`> 💡 **팁:**\`, \`> 📌 **참고:**\`) MUST be kept as is.
         3. **Preserve Disclaimer**: If there is an Investment Disclaimer (투자 면책 고지) block at the bottom, you MUST preserve it exactly as is. Do not modify or remove it.
         4. **No Hallucination**: Do NOT add new facts or change the meaning of the content. Only improve the styling, clarity, and keyword usage.

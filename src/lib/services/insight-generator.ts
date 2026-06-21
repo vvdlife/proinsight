@@ -59,10 +59,10 @@ Your output MUST be a valid JSON object matching exactly this structure:
 --- Markdown Content Requirements (CRITICAL) ---
 The 'content' string MUST be a complete markdown document that strictly includes:
 1. Professional headings (H2, H3).
-2. At least one JSON/Markdown Table comparing sectors (e.g., Beneficiaries vs. Victims).
+2. At least one JSON/Markdown Table comparing sectors (e.g., Beneficiaries vs. Victims). **CRITICAL**: Every row (including the header, separator, and data rows) MUST start and end with a pipe (\`|\`) character. The separator row immediately below the header must contain standard alignment indicators (e.g., \`| :--- | :---: | :--- |\`).
 3. At least one \`mermaid\` code block diagram (graph LR or TD) showing macroeconomic impact or capital flow. 
-   (CRITICAL: Do NOT wrap the mermaid block inside another outer markdown code block. Use exactly \`\`\`mermaid and \`\`\`)
-4. Use standard Markdown blockquotes with emojis for important warnings and strategies (e.g., > ⚠️ **주의:** [내용] or > 💡 **팁:** [내용]). Do NOT use GitHub-style callouts like > [!WARNING].
+   (CRITICAL: Do NOT wrap the mermaid block inside another outer markdown code block. Use exactly \`\`\`mermaid and \`\`\`. Do NOT include any emojis or special characters inside the node text/labels or subgraph titles in the mermaid block - only use pure Korean, English, and numeric text).
+4. Use standard Markdown blockquotes with emojis and bold headlines for important warnings and strategies (e.g., \`> ⚠️ **주의:** [내용]\` or \`> 💡 **팁:** [내용]\`). Do NOT use GitHub-style callouts like \`> [!WARNING]\`.
 5. Answer 2-3 FAQ questions at the bottom.
 Do not include the title or the Key Takeaways in the 'content' body, as they will be rendered separately.
 Write entirely in Professional Korean.
