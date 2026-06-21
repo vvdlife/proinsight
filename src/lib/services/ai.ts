@@ -77,6 +77,15 @@ export async function generateOutline(data: PostFormValues, searchContext: strin
     // Use selected model
     const model = getGeminiModel(apiKey, selectedModel, 0.2, "application/json");
 
+    let sectionCountInstruction = "";
+    if (data.length === "short") {
+        sectionCountInstruction = `Structure the post into exactly 2-3 sections in total (including the "Key Takeaways (3줄 요약)" as the first section, 1 core body section, and "자주 묻는 질문 (FAQ)" as the last section). Do NOT create more than 3 sections.`;
+    } else if (data.length === "medium") {
+        sectionCountInstruction = `Structure the post into exactly 3-4 sections in total (including the "Key Takeaways (3줄 요약)" first section and "자주 묻는 질문 (FAQ)" last section).`;
+    } else {
+        sectionCountInstruction = `Structure the post into exactly 4-5 sections in total (including the "Key Takeaways (3줄 요약)" first section and "자주 묻는 질문 (FAQ)" last section) for a comprehensive post.`;
+    }
+
     const prompt = `
 You are a Senior Content Architect.
 Your goal is to plan a comprehensive, professional technical blog post.
@@ -93,7 +102,7 @@ search_context:
 
 INSTRUCTIONS:
 1. Analyze the 'search_context' to identify key themes and logical flow.
-2. Structure the post into 4-5 highly comprehensive and information-dense sections. (Focus on quality over quantity)
+2. **Section Count**: ${sectionCountInstruction}
 3. **CRITICAL**: The first section MUST be named "Key Takeaways (3줄 요약)".
 4. **CRITICAL**: The LAST section MUST be named "자주 묻는 질문 (FAQ)".
 5. **E-E-A-T & SEO Strategy**:
@@ -138,6 +147,15 @@ export async function generateSection(
     // Use selected model
     const model = getGeminiModel(apiKey, selectedModel, 0.2);
 
+    let lengthInstruction = "";
+    if (data.length === "short") {
+        lengthInstruction = "Write extremely concisely. The target length for this section is around 100-150 Korean characters. Limit this section to 1-2 short paragraphs maximum. Focus only on the core facts without unnecessary explanations.";
+    } else if (data.length === "medium") {
+        lengthInstruction = "Write moderately. The target length for this section is around 300-400 Korean characters. Keep it to 2-3 paragraphs. Balance brevity and detail.";
+    } else {
+        lengthInstruction = "Write comprehensively. The target length for this section is 600+ Korean characters. Provide in-depth analysis and details.";
+    }
+
     const prompt = `
 You are a Senior Technical Analyst. Write ONE section of a blog post.
 
@@ -153,11 +171,12 @@ ${searchContext || ""}
 
 STRICT INSTRUCTIONS:
 1. Write ONLY the content for this section. Do NOT repeat the heading.
-2. **formatting**:
+2. **Length Constraint**: ${lengthInstruction}
+3. **formatting**:
    - Use standard Markdown headers (###, ####) for subsections.
    - Do NOT use H1 (#) or H2 (##) as the section title is added automatically.
    - Do NOT manually number the section title (e.g., avoid "1. Introduction").
-3. **E-E-A-T Enhancement (Experience, Expertise, Authoritativeness, Trustworthiness)**:
+4. **E-E-A-T Enhancement (Experience, Expertise, Authoritativeness, Trustworthiness)**:
    - **Experience**: Include specific scenarios or "real-world" application examples. Avoid generic theory.
    - **Expertise**: Use precise technical terminology and provide deep analysis.
    - **Authoritativeness**: Actively cite sources from 'search_context' using inline brackets like [1], [2].
