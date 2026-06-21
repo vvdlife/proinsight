@@ -10,8 +10,9 @@ export async function generateImagePrompt(topic: string, apiKey: string): Promis
 You are a creative director for a tech blog.
         Task: Create a perfect English image prompt for a blog thumbnail based on the topic: "${topic}".
     Style requirements: Photorealistic, Cinematic lighting, High Quality, Abstract tech element.
-    NEGATIVE CONSTRAINT: Ensure the image does NOT contain any bull, ox, buffalo, or similar animal shapes.Focus on abstract or human / tech representations.
-        Constraint: Return ONLY the prompt text.Do not add any conversational filler.
+    Human Representation Rule: If the image depicts any human figures, they should be professional Caucasian men or Caucasian women to fit a clean, corporate tech aesthetic.
+    NEGATIVE CONSTRAINT: Ensure the image does NOT contain any bull, ox, buffalo, or similar animal shapes. Focus on abstract or human / tech representations.
+        Constraint: Return ONLY the prompt text. Do not add any conversational filler.
     `;
 
     try {
