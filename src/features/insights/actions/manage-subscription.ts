@@ -111,6 +111,7 @@ export async function triggerInsightGeneration() {
         const domain = process.env.NEXT_PUBLIC_APP_URL 
             || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const reportUrl = `${domain}/dashboard/insights/${report.id}`;
+        const downloadUrl = `${domain}/api/insights/${report.id}/download`;
 
         console.log(`[InsightTrigger] Dispatching for userId: ${sub.userId}, domain: ${domain}`);
         console.log(`[InsightTrigger] Sub Settings: Email=${sub.receiveEmail}, Telegram=${sub.telegramChatId ? 'YES' : 'NO'}`);
@@ -121,7 +122,7 @@ export async function triggerInsightGeneration() {
             console.log(`[InsightTrigger] Sending Telegram to ${sub.telegramChatId}`);
             const safeTitle = escapeTelegramHtml(report.title);
             const safeSummary = escapeTelegramHtml(report.summary || "");
-            const tgMessage = `🔔 <b>[ProInsight] 수동 테스트 리포트 도착</b>\n\n<b>${safeTitle}</b>\n\n<i>${safeSummary}</i>\n\n<a href="${reportUrl}">👉 전체 리포트 읽기</a>`;
+            const tgMessage = `🔔 <b>[ProInsight] 수동 테스트 리포트 도착</b>\n\n<b>${safeTitle}</b>\n\n<i>${safeSummary}</i>\n\n🖥️ <a href="${reportUrl}">웹 대시보드에서 읽기</a>\n📥 <a href="${downloadUrl}">마크다운(.md) 파일 다운로드</a>`;
             const tgRes = await sendTelegramMessage(sub.telegramChatId, tgMessage);
             if (!tgRes.success) {
                 console.error(`[InsightTrigger] Telegram Failed: ${tgRes.error}`);
@@ -149,7 +150,10 @@ export async function triggerInsightGeneration() {
                                 <h4 style="margin-top: 0; color: #555;">Key Takeaways (3줄 요약)</h4>
                                 <p style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #444;">${report.summary}</p>
                             </div>
-                            <a href="${reportUrl}" style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-weight: bold;">전체 리포트 읽기 & AI 라디오 듣기</a>
+                            <div style="margin-top: 30px; text-align: center;">
+                                <a href="${reportUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 15px; margin-right: 10px;">🖥️ 웹 대시보드에서 읽기</a>
+                                <a href="${downloadUrl}" style="display: inline-block; background-color: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 15px;">📥 마크다운 파일 다운로드</a>
+                            </div>
                         </div>
                     `;
                     const emailRes = await sendEmailNotification(userEmail, `[ProInsight TEST] ${report.title}`, htmlTemplate);
