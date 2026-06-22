@@ -23,9 +23,16 @@ export async function createSubscription(formData: FormData) {
         const receiveEmail = formData.get("receiveEmail") === "on";
         const telegramChatId = formData.get("telegramChatId") as string | null;
 
+        const preferredTimeStr = formData.get("preferredTime") as string;
+        const preferredDays = formData.get("preferredDays") as string | null;
+        const preferredDayOfMonthStr = formData.get("preferredDayOfMonth") as string | null;
+
         if (!topic || !frequency || !persona) {
             return { success: false, error: "필수 입력 항목이 누락되었습니다." };
         }
+
+        const preferredTime = preferredTimeStr ? parseInt(preferredTimeStr, 10) : 8;
+        const preferredDayOfMonth = preferredDayOfMonthStr ? parseInt(preferredDayOfMonthStr, 10) : 1;
 
         // Upsert to ensure only one subscription per user for MVP
         // For multiple subscriptions, we'd use create
@@ -37,6 +44,9 @@ export async function createSubscription(formData: FormData) {
                 persona,
                 receiveEmail,
                 telegramChatId,
+                preferredTime,
+                preferredDays: frequency === "WEEKLY" ? preferredDays : null,
+                preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true,
             },
             create: {
@@ -46,6 +56,9 @@ export async function createSubscription(formData: FormData) {
                 persona,
                 receiveEmail,
                 telegramChatId,
+                preferredTime,
+                preferredDays: frequency === "WEEKLY" ? preferredDays : null,
+                preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true, // Will start generating immediately at next cron cycle
             },
         });
@@ -105,6 +118,12 @@ export async function triggerInsightGeneration() {
                 content: reportContent.content,
                 summary: reportContent.summary,
             }
+        });
+
+        // 2.5 Update lastGeneratedAt
+        await prisma.insightSubscription.update({
+            where: { id: sub.id },
+            data: { lastGeneratedAt: new Date() }
         });
 
         // 3. Dispatch Notifications

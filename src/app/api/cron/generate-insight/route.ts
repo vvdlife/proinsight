@@ -11,12 +11,72 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
+        const now = new Date();
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const kstDate = new Date(now.getTime() + kstOffset);
+        const currentHourKST = kstDate.getUTCHours();
+        const currentDayOfWeekKST = kstDate.getUTCDay(); // 0: Sun, 1: Mon, ...
+        const currentDayOfMonthKST = kstDate.getUTCDate();
+
+        const DAYS_MAP = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        const currentDayStrKST = DAYS_MAP[currentDayOfWeekKST];
+
+        console.log(`[CronScheduler] Running scheduler at KST Time: ${kstDate.toUTCString().replace("GMT", "KST")}, Hour: ${currentHourKST}, DayOfWeek: ${currentDayStrKST}, DayOfMonth: ${currentDayOfMonthKST}`);
+
         // Find all active subscriptions
-        const subscriptions = await prisma.insightSubscription.findMany({
+        const allActiveSubscriptions = await prisma.insightSubscription.findMany({
             where: { isActive: true },
-            // In a real app we'd filter by due date based on Frequency
-            // e.g. only run DAILY ones today if not run today
         });
+
+        const subscriptions = allActiveSubscriptions.filter(sub => {
+            // 1. Check Hour
+            if (sub.preferredTime !== currentHourKST) {
+                return false;
+            }
+
+            // 2. Check duplicate generation (same day safeguard)
+            if (sub.lastGeneratedAt) {
+                const lastGenKST = new Date(sub.lastGeneratedAt.getTime() + kstOffset);
+                // If last generated is today (same year, month, date) in KST, skip it!
+                if (
+                    lastGenKST.getUTCFullYear() === kstDate.getUTCFullYear() &&
+                    lastGenKST.getUTCMonth() === kstDate.getUTCMonth() &&
+                    lastGenKST.getUTCDate() === kstDate.getUTCDate()
+                ) {
+                    console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated today: ${lastGenKST.toUTCString()})`);
+                    return false;
+                }
+            }
+
+            // 3. Check Frequency specific schedules
+            if (sub.frequency === "DAILY") {
+                return true;
+            }
+
+            if (sub.frequency === "WEEKLY") {
+                if (!sub.preferredDays) return false;
+                const preferredDaysList = sub.preferredDays.split(",");
+                return preferredDaysList.includes(currentDayStrKST);
+            }
+
+            if (sub.frequency === "MONTHLY") {
+                // If preferredDayOfMonth matches today
+                if (sub.preferredDayOfMonth === currentDayOfMonthKST) {
+                    return true;
+                }
+                // If today is the last day of the month and preferredDayOfMonth is greater than today (e.g. preferred 31st but it's Feb 28th/29th)
+                const nextDayKST = new Date(kstDate.getTime() + 24 * 60 * 60 * 1000);
+                const isLastDayOfMonth = nextDayKST.getUTCMonth() !== kstDate.getUTCMonth();
+                if (isLastDayOfMonth && sub.preferredDayOfMonth && sub.preferredDayOfMonth > currentDayOfMonthKST) {
+                    return true;
+                }
+                return false;
+            }
+
+            return false;
+        });
+
+        console.log(`[CronScheduler] Found ${subscriptions.length} subscriptions due for processing.`);
 
         const results = [];
 
@@ -35,6 +95,12 @@ export async function GET() {
                         content: reportContent.content,
                         summary: reportContent.summary,
                     }
+                });
+
+                // Update lastGeneratedAt
+                await prisma.insightSubscription.update({
+                    where: { id: sub.id },
+                    data: { lastGeneratedAt: new Date() }
                 });
 
                 // 3. Dispatch Notifications

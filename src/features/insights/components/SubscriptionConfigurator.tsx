@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,38 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { createSubscription, toggleSubscription, triggerInsightGeneration } from "@/features/insights/actions/manage-subscription";
 import { Loader2, BellRing, BrainCircuit, Play } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
     subscription: any;
 }
 
+const WEEKDAYS = [
+    { label: "월", value: "MON" },
+    { label: "화", value: "TUE" },
+    { label: "수", value: "WED" },
+    { label: "목", value: "THU" },
+    { label: "금", value: "FRI" },
+    { label: "토", value: "SAT" },
+    { label: "일", value: "SUN" },
+];
+
 export function SubscriptionConfigurator({ subscription }: Props) {
     const [isPending, startTransition] = useTransition();
+    const [frequency, setFrequency] = useState(subscription?.frequency || "DAILY");
+    const [selectedDays, setSelectedDays] = useState<string[]>(
+        subscription?.preferredDays 
+            ? subscription.preferredDays.split(",") 
+            : ["MON"]
+    );
+
+    const toggleDay = (dayValue: string) => {
+        setSelectedDays(prev => 
+            prev.includes(dayValue) 
+                ? prev.filter(d => d !== dayValue) 
+                : [...prev, dayValue]
+        );
+    };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -107,17 +132,21 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                         <p className="text-xs text-muted-foreground">이 테마를 중심으로 월스트리트 뉴스 및 매크로 지표를 스크래핑합니다.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="frequency">수신 주기</Label>
-                            <Select name="frequency" defaultValue={subscription?.frequency || "DAILY"}>
+                            <Select 
+                                name="frequency" 
+                                value={frequency} 
+                                onValueChange={setFrequency}
+                            >
                                 <SelectTrigger id="frequency">
                                     <SelectValue placeholder="주기 선택" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="DAILY">매일 아침 (Daily Briefing)</SelectItem>
-                                    <SelectItem value="WEEKLY">주간 심층 (Weekly Deep-dive)</SelectItem>
-                                    <SelectItem value="MONTHLY">월간 전략 (Monthly Strategy)</SelectItem>
+                                    <SelectItem value="DAILY">매일 (Daily Briefing)</SelectItem>
+                                    <SelectItem value="WEEKLY">매주 (Weekly Deep-dive)</SelectItem>
+                                    <SelectItem value="MONTHLY">매월 (Monthly Strategy)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -134,6 +163,95 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+
+                    {/* Dynamic Scheduler Options */}
+                    <div className="bg-primary/5 rounded-xl p-5 border border-primary/10 space-y-4 transition-all duration-300">
+                        <h4 className="text-sm font-bold text-primary flex items-center gap-1.5">
+                            📅 발송 상세 스케줄 설정
+                        </h4>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Time selector (all frequencies) */}
+                            <div className="space-y-2">
+                                <Label htmlFor="preferredTime">수신 시간 (한국 표준시 KST)</Label>
+                                <Select 
+                                    name="preferredTime" 
+                                    defaultValue={String(subscription?.preferredTime ?? 8)}
+                                >
+                                    <SelectTrigger id="preferredTime" className="bg-background">
+                                        <SelectValue placeholder="시간 선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Array.from({ length: 24 }).map((_, i) => {
+                                            let label = "";
+                                            if (i === 0) label = "오전 12시 (00:00)";
+                                            else if (i < 12) label = `오전 ${i}시 (${String(i).padStart(2, '0')}:00)`;
+                                            else if (i === 12) label = "오후 12시 (12:00)";
+                                            else label = `오후 ${i - 12}시 (${String(i).padStart(2, '0')}:00)`;
+                                            
+                                            return (
+                                                <SelectItem key={i} value={String(i)}>
+                                                    {label}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Monthly day selector */}
+                            {frequency === "MONTHLY" && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <Label htmlFor="preferredDayOfMonth">수신 일자</Label>
+                                    <Select 
+                                        name="preferredDayOfMonth" 
+                                        defaultValue={String(subscription?.preferredDayOfMonth ?? 1)}
+                                    >
+                                        <SelectTrigger id="preferredDayOfMonth" className="bg-background">
+                                            <SelectValue placeholder="일자 선택" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 31 }).map((_, i) => (
+                                                <SelectItem key={i + 1} value={String(i + 1)}>
+                                                    매월 {i + 1}일
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Weekly days selector */}
+                        {frequency === "WEEKLY" && (
+                            <div className="space-y-3 pt-2 border-t border-primary/5 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Label>수신 요일 (다중 선택 가능)</Label>
+                                <input type="hidden" name="preferredDays" value={selectedDays.join(",")} />
+                                <div className="flex flex-wrap gap-2">
+                                    {WEEKDAYS.map((day) => {
+                                        const isSelected = selectedDays.includes(day.value);
+                                        return (
+                                            <Button
+                                                key={day.value}
+                                                type="button"
+                                                variant={isSelected ? "default" : "outline"}
+                                                onClick={() => toggleDay(day.value)}
+                                                className={cn(
+                                                    "w-11 h-11 p-0 rounded-lg font-semibold transition-all duration-200 text-sm",
+                                                    isSelected 
+                                                        ? "bg-primary text-primary-foreground shadow-sm scale-105 hover:bg-primary/95" 
+                                                        : "bg-background hover:bg-accent hover:text-accent-foreground"
+                                                )}
+                                            >
+                                                {day.label}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-xs text-muted-foreground">선택하신 요일의 정해진 시간대에 리포트 분석이 수행됩니다.</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
                 <div className="px-6 pb-6 space-y-4">

@@ -56,11 +56,15 @@ model InsightSubscription {
   frequency      String   // "DAILY", "WEEKLY", "MONTHLY"
   persona        String   // "AGGRESSIVE", "DEFENSIVE", "NEUTRAL"
   isActive       Boolean  @default(true)
-  receiveEmail   Boolean  @default(true)
-  telegramChatId String?  // Optional Telegram Chat ID
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  reports        InsightReport[]
+  receiveEmail       Boolean  @default(true)
+  telegramChatId     String?  // Optional Telegram Chat ID
+  preferredTime      Int      @default(8)  // Preferred hour of day KST (0-23)
+  preferredDays      String?               // Comma-separated days for weekly subscriptions (e.g. "MON,WED,FRI")
+  preferredDayOfMonth Int?                 // Preferred day of month for monthly subscriptions (1-31)
+  lastGeneratedAt    DateTime?             // Last time the report was successfully generated
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  reports            InsightReport[]
 }
 
 model InsightReport {
