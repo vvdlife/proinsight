@@ -1,3 +1,4 @@
+// Path: src/features/insights/actions/manage-subscription.ts
 "use server";
 
 import { prisma } from "@/lib/db";
@@ -10,81 +11,88 @@ import { sendEmailNotification } from "@/lib/services/notifications/email";
 import { sendTelegramMessage, escapeTelegramHtml } from "@/lib/services/notifications/telegram";
 
 export async function createSubscription(formData: FormData) {
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, error: "로그인이 필요합니다." };
+        }
 
-    const { userId } = await auth();
-    if (!userId) {
-        throw new Error("Unauthorized");
+        const topic = formData.get("topic") as string;
+        const frequency = formData.get("frequency") as string;
+        const persona = formData.get("persona") as string;
+        const receiveEmail = formData.get("receiveEmail") === "on";
+        const telegramChatId = formData.get("telegramChatId") as string | null;
+
+        if (!topic || !frequency || !persona) {
+            return { success: false, error: "필수 입력 항목이 누락되었습니다." };
+        }
+
+        // Upsert to ensure only one subscription per user for MVP
+        // For multiple subscriptions, we'd use create
+        await prisma.insightSubscription.upsert({
+            where: { userId },
+            update: {
+                topic,
+                frequency,
+                persona,
+                receiveEmail,
+                telegramChatId,
+                isActive: true,
+            },
+            create: {
+                userId,
+                topic,
+                frequency,
+                persona,
+                receiveEmail,
+                telegramChatId,
+                isActive: true, // Will start generating immediately at next cron cycle
+            },
+        });
+
+        revalidatePath("/dashboard/insights");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Create Subscription Error:", error);
+        return { success: false, error: error.message || "구독 설정 저장 중 오류가 발생했습니다." };
     }
-
-    const topic = formData.get("topic") as string;
-    const frequency = formData.get("frequency") as string;
-    const persona = formData.get("persona") as string;
-    const receiveEmail = formData.get("receiveEmail") === "on";
-    const telegramChatId = formData.get("telegramChatId") as string | null;
-
-    if (!topic || !frequency || !persona) {
-        throw new Error("Missing required fields");
-    }
-
-    // Upsert to ensure only one subscription per user for MVP
-    // For multiple subscriptions, we'd use create
-    await prisma.insightSubscription.upsert({
-        where: { userId },
-        update: {
-            topic,
-            frequency,
-            persona,
-            receiveEmail,
-            telegramChatId,
-            isActive: true,
-        },
-        create: {
-            userId,
-            topic,
-            frequency,
-            persona,
-            receiveEmail,
-            telegramChatId,
-            isActive: true, // Will start generating immediately at next cron cycle
-        },
-    });
-
-    revalidatePath("/dashboard/insights");
-    return { success: true };
 }
 
 export async function toggleSubscription(isActive: boolean) {
-    const { userId } = await auth();
-    if (!userId) {
-        throw new Error("Unauthorized");
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, error: "로그인이 필요합니다." };
+        }
+
+        await prisma.insightSubscription.update({
+            where: { userId },
+            data: { isActive },
+        });
+
+        revalidatePath("/dashboard/insights");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Toggle Subscription Error:", error);
+        return { success: false, error: error.message || "상태 변경 중 오류가 발생했습니다." };
     }
-
-    await prisma.insightSubscription.update({
-        where: { userId },
-        data: { isActive },
-    });
-
-    revalidatePath("/dashboard/insights");
-    return { success: true };
 }
 
 export async function triggerInsightGeneration() {
-    "use server";
-    
-    const { userId } = await auth();
-    if (!userId) {
-        throw new Error("Unauthorized");
-    }
-
-    const sub = await prisma.insightSubscription.findUnique({
-        where: { userId }
-    });
-
-    if (!sub || !sub.isActive) {
-        throw new Error("활성화된 구독이 없습니다.");
-    }
-
     try {
+        const { userId } = await auth();
+        if (!userId) {
+            return { success: false, error: "로그인이 필요합니다." };
+        }
+
+        const sub = await prisma.insightSubscription.findUnique({
+            where: { userId }
+        });
+
+        if (!sub || !sub.isActive) {
+            return { success: false, error: "활성화된 구독이 없습니다. 구독을 먼저 시작해 주세요." };
+        }
+
         // 1. Generate Content
         const reportContent = await generateInsightContent(sub.userId, sub.topic, sub.persona);
         

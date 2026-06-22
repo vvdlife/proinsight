@@ -27,6 +27,8 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                 const res = await createSubscription(formData);
                 if (res.success) {
                     toast.success("구독 설정이 저장되었습니다.");
+                } else {
+                    toast.error(res.error || "구독 설정 저장에 실패했습니다.");
                 }
             } catch (error: any) {
                 toast.error("저장 실패: " + error.message);
@@ -40,6 +42,8 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                 const res = await toggleSubscription(checked);
                 if (res.success) {
                     toast.success(checked ? "구독이 활성화되었습니다." : "구독이 일시 정지되었습니다.");
+                } else {
+                    toast.error(res.error || "상태 변경에 실패했습니다.");
                 }
             } catch (error: any) {
                 toast.error("상태 변경 실패: " + error.message);
