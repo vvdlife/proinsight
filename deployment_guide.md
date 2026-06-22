@@ -38,6 +38,13 @@
 | `CLERK_SECRET_KEY` | Clerk 라이브 비밀 키 | `sk_live_...` |
 | `GEMINI_API_KEY` | Google Gemini API 키 | `AIza...` |
 | `NEXT_PUBLIC_APP_URL` | 배포된 앱의 도메인 | `https://your-project.vercel.app` |
+| `TELEGRAM_BOT_TOKEN` | 텔레그램 알림용 봇 토큰 (선택) | `123456:ABC-DEF...` |
+| `SMTP_HOST` | 이메일 전송용 SMTP 서버 주소 (선택) | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP 포트 (선택) | `587` |
+| `SMTP_USER` | SMTP 사용자명/이메일 (선택) | `user@gmail.com` |
+| `SMTP_PASS` | SMTP 비밀번호/앱 비밀번호 (선택) | `abcd efgh ijkl mnop` |
+| `SMTP_SECURE` | 보안 연결 사용 여부 (선택) | `false` (587 포트는 false, 465 포트는 true) |
+| `SMTP_FROM` | 발신자 표기용 이메일 (선택) | `"ProInsight AI" <user@gmail.com>` |
 
 > **주의**: 키를 변경한 후에는 **Deployments** 탭에서 **Redeploy**를 수행해야 변경 사항이 적용됩니다.
 

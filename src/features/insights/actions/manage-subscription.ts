@@ -172,7 +172,10 @@ export async function triggerInsightGeneration() {
         revalidatePath("/dashboard/insights");
         
         if (warningMessage) {
-            return { success: false, error: `리포트는 생성되었으나 알림 전송에 실패했습니다: ${warningMessage}` };
+            return { 
+                success: true, 
+                message: `리포트가 성공적으로 생성되었습니다! (단, 연동 설정 누락으로 일부 알림 발송은 실패했습니다: ${warningMessage})` 
+            };
         }
         
         return { success: true, message: "리포트 생성 및 전송 완료!" };
