@@ -13,7 +13,6 @@ import { Eye, EyeOff, Loader2, Key } from "lucide-react";
 interface ApiKeyFormProps {
     hasKey: {
         gemini: boolean;
-        openai: boolean;
     };
 }
 
@@ -26,7 +25,7 @@ export function ApiKeyForm({ hasKey }: ApiKeyFormProps) {
                     AI API Key 설정
                 </CardTitle>
                 <CardDescription>
-                    각 AI 서비스별 API Key를 안전하게 관리하세요.
+                    AI 서비스 사용을 위한 Google Gemini API Key를 안전하게 관리하세요.
                     <br />
                     키는 서버에 안전하게 저장되며, 언제든지 변경할 수 있습니다.
                 </CardDescription>
@@ -40,23 +39,12 @@ export function ApiKeyForm({ hasKey }: ApiKeyFormProps) {
                     placeholder="AI Studio에서 발급받은 키 (AI-XXX)"
                     link="https://aistudio.google.com/app/apikey"
                 />
-
-                <div className="border-t" />
-
-                {/* OpenAI Section */}
-                <KeyInputSection
-                    provider="openai"
-                    label="OpenAI API Key"
-                    hasKey={hasKey.openai}
-                    placeholder="OpenAI Platform에서 발급받은 키 (sk-XXX)"
-                    link="https://platform.openai.com/api-keys"
-                />
             </CardContent>
         </Card>
     );
 }
 
-function KeyInputSection({ provider, label, hasKey, placeholder, link }: { provider: "gemini" | "openai", label: string, hasKey: boolean, placeholder: string, link: string }) {
+function KeyInputSection({ provider, label, hasKey, placeholder, link }: { provider: "gemini", label: string, hasKey: boolean, placeholder: string, link: string }) {
     const [apiKey, setApiKey] = useState("");
     const [isVisible, setIsVisible] = useState(false);
     const [isPending, startTransition] = useTransition();
@@ -68,7 +56,7 @@ function KeyInputSection({ provider, label, hasKey, placeholder, link }: { provi
         }
 
         startTransition(async () => {
-            const result = await saveApiKey(apiKey, provider);
+            const result = await saveApiKey(apiKey);
             if (result.success) {
                 toast.success(`${label} 저장 완료`);
                 setApiKey("");

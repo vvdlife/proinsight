@@ -6,15 +6,14 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function getApiKeyStatus() {
     const { userId } = await auth();
-    if (!userId) return { gemini: false, openai: false };
+    if (!userId) return { gemini: false };
 
     const settings = await prisma.userSettings.findUnique({
         where: { userId },
-        select: { apiKey: true, openaiApiKey: true },
+        select: { apiKey: true },
     });
 
     return {
         gemini: !!settings?.apiKey,
-        openai: !!settings?.openaiApiKey,
     };
 }
