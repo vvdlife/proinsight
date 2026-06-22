@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SubscriptionConfigurator } from "@/features/insights/components/SubscriptionConfigurator";
 import { InsightWidget } from "@/features/insights/components/InsightWidget";
+import Link from "next/link";
 
 export const metadata = {
     title: "Insight Subscription | ProInsight",
@@ -54,7 +55,11 @@ export default async function InsightsPage() {
                             <h2 className="text-xl font-semibold">📚 지난 리포트 모아보기</h2>
                             <div className="bg-card rounded-xl border shadow-sm divide-y">
                                 {subscription.reports.slice(1).map((report: any) => (
-                                    <div key={report.id} className="p-4 hover:bg-muted/50 transition-colors flex justify-between items-center group cursor-pointer">
+                                    <Link 
+                                        key={report.id} 
+                                        href={`/dashboard/insights/${report.id}`}
+                                        className="p-4 hover:bg-muted/50 transition-colors flex justify-between items-center group cursor-pointer block"
+                                    >
                                         <div>
                                             <div className="font-medium text-foreground group-hover:text-primary transition-colors">
                                                 {report.title}
@@ -66,7 +71,7 @@ export default async function InsightsPage() {
                                         <div className="text-muted-foreground text-sm opacity-0 group-hover:opacity-100 transition-opacity">
                                             읽기 &rarr;
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>

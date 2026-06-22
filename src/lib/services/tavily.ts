@@ -11,12 +11,20 @@ export interface TavilyContext {
     relatedQuestions: string[]; // "People Also Ask"
 }
 
-export async function searchTavily(query: string): Promise<TavilyContext> {
+export interface TavilySearchOptions {
+    searchDepth?: "basic" | "advanced";
+    maxResults?: number;
+}
+
+export async function searchTavily(query: string, options?: TavilySearchOptions): Promise<TavilyContext> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) {
         console.warn("TAVILY_API_KEY is not set. Creating empty context.");
         return { results: [], relatedQuestions: [] };
     }
+
+    const depth = options?.searchDepth || "basic";
+    const maxResults = options?.maxResults || 5;
 
     try {
         const response = await fetch("https://api.tavily.com/search", {
@@ -27,14 +35,11 @@ export async function searchTavily(query: string): Promise<TavilyContext> {
             body: JSON.stringify({
                 api_key: apiKey,
                 query: query,
-                search_depth: "basic",
+                search_depth: depth,
                 include_answer: true,
                 include_raw_content: false,
                 include_images: false,
-                // Asking for Q&A style data implicitly via content analysis
-                // Tavily API might not have explicit "related questions" field in basic tier,
-                // but we can extract insights from 'results'.
-                // However, let's stick to standard Tavily search response structure.
+                max_results: maxResults,
             }),
         });
 

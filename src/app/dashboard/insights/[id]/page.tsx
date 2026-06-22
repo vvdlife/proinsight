@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarClock, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
 
 interface Props {
     params: { id: string };
@@ -69,14 +70,8 @@ export default async function InsightDetailPage({ params }: Props) {
                 </div>
             )}
 
-            <article className="prose prose-slate max-w-none dark:prose-invert">
-                {/* 
-                  MVP: Simple white-space pre-wrap for the markdown.
-                  In production, we should map standard markdown (Showdown/React-Markdown) and Mermaid rendering here.
-                */}
-                <div className="whitespace-pre-wrap leading-[1.8] font-medium text-zinc-800 dark:text-zinc-200">
-                    {report.content}
-                </div>
+            <article className="max-w-none">
+                <MarkdownViewer content={report.content} />
             </article>
         </div>
     );
