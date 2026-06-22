@@ -7,23 +7,18 @@ import { toast } from "sonner";
 
 // Actions
 import { updatePost } from "@/features/post/actions/update-post";
-import { optimizePost } from "@/features/post/actions/optimize-post";
-import { runSEOAnalysis, AnalyzeSEOResponse } from "@/features/post/actions/analyze-seo";
 import { generateVoiceBriefing } from "@/features/post/actions/generate-voice";
 
 // Components
 import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
-import { SeoDashboard } from "@/features/post/components/SeoDashboard";
 import { SocialMediaDashboard } from "@/features/post/components/SocialMediaDashboard";
 import { ReadingProgressBar } from "@/features/post/components/ReadingProgressBar";
 import { TableOfContents } from "@/features/post/components/TableOfContents";
 import { AudioPlayer } from "@/features/post/components/AudioPlayer";
 import { PostHeader } from "@/features/post/components/PostHeader";
 import { PostActionToolbar } from "@/features/post/components/PostActionToolbar";
-import { WordPressDialog } from "@/features/publishing/components/wordpress-dialog";
 
 // UI
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { convertMarkdownToHtml } from "@/lib/utils/markdown-to-html";
 import { copyToClipboardAsRichText } from "@/lib/utils/clipboard";
 
@@ -45,20 +40,9 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
     const [content, setContent] = useState(initialPost.content);
     const [isPending, startTransition] = useTransition();
 
-    // Undo/Redo/Backup for Optimization
-    const [prevContent, setPrevContent] = useState<string | null>(null);
-
-    // Feature: SEO
-    const [seoResult, setSeoResult] = useState<AnalyzeSEOResponse["data"] | null>(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [isSheetOpen, setIsSheetOpen] = useState(false); // SEO Sheet Control
-
     // Feature: Voice Blog
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
     const [audioUrl, setAudioUrl] = useState<string | null>(initialPost.audioUrl);
-
-    // Feature: Optimizer
-    const [isOptimizing, setIsOptimizing] = useState(false);
 
     // Feature: Print
     const printRef = useRef<HTMLDivElement>(null);
@@ -76,7 +60,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
             if (result.success) {
                 toast.success("저장 완료!", { description: "게시글이 성공적으로 수정되었습니다." });
                 setIsEditing(false);
-                setPrevContent(null);
             } else {
                 toast.error("저장 실패", { description: result.message });
             }
@@ -86,15 +69,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
     const handleCancel = () => {
         setContent(initialPost.content);
         setIsEditing(false);
-        setPrevContent(null);
-    };
-
-    const handleRevert = () => {
-        if (prevContent) {
-            setContent(prevContent);
-            setPrevContent(null);
-            toast.success("원래 내용으로 복구되었습니다.");
-        }
     };
 
     const handleGenerateAudio = async () => {
@@ -117,39 +91,7 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
         }
     };
 
-    const handleAnalyzeSEO = async () => {
-        setIsSheetOpen(true); // Open sheet
-        setIsAnalyzing(true);
-        const result = await runSEOAnalysis(content, initialPost.topic);
-        setIsAnalyzing(false);
 
-        if (result.success && result.data) {
-            setSeoResult(result.data);
-            toast.success("SEO 분석 완료", { description: "분석 리포트를 확인하세요." });
-        } else {
-            toast.error("분석 실패", { description: result.message });
-        }
-    };
-
-    const handleOptimize = async () => {
-        if (!seoResult || !seoResult.suggestions) return;
-        setPrevContent(content);
-        setIsOptimizing(true);
-        toast.info("AI 최적화가 시작되었습니다...");
-
-        const result = await optimizePost(content, seoResult.suggestions);
-        setIsOptimizing(false);
-
-        if (result.success && result.data) {
-            setContent(result.data);
-            setIsEditing(true);
-            setIsSheetOpen(false); // Close sheet to show changes
-            toast.success("최적화 완료!", { description: "변경된 내용을 확인하세요." });
-        } else {
-            toast.error("최적화 실패", { description: result.message });
-            setPrevContent(null);
-        }
-    };
 
     const handleDownloadMarkdown = () => {
         const blob = new Blob([content], { type: "text/markdown" });
@@ -192,9 +134,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                 onToggleEdit={setIsEditing}
                 onSave={handleSave}
                 onCancel={handleCancel}
-                onRevert={handleRevert}
-                canRevert={!!prevContent}
-                onAnalyzeSEO={() => isSheetOpen ? setIsSheetOpen(false) : handleAnalyzeSEO()}
                 onGenerateAudio={handleGenerateAudio}
                 onDownloadMarkdown={handleDownloadMarkdown}
                 onPrint={handlePrint}
@@ -237,28 +176,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
 
             {/* 4. Footer Utilities */}
 
-            {/* SEO Analysis Sheet */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent className="overflow-y-auto min-w-[400px]">
-                    <SheetHeader>
-                        <SheetTitle>SEO 분석 & 최적화</SheetTitle>
-                        <SheetDescription>
-                            AI가 콘텐츠를 분석하여 검색 엔진 최적화 점수와 개선 제안을 제공합니다.
-                        </SheetDescription>
-                    </SheetHeader>
-                    <SeoDashboard
-                        content={content}
-                        topic={initialPost.topic}
-                        schemaMarkup={initialPost.schemaMarkup}
-                        seoResult={seoResult}
-                        isAnalyzing={isAnalyzing}
-                        isOptimizing={isOptimizing}
-                        onAnalyze={handleAnalyzeSEO}
-                        onOptimize={handleOptimize}
-                    />
-                </SheetContent>
-            </Sheet>
-
             {/* Social Media & OSMU Area */}
             <div className="mt-12 border-t pt-10 print:hidden">
                 <div className="flex items-center justify-between mb-6">
@@ -268,8 +185,6 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                             작성된 콘텐츠를 다양한 포맷으로 확장하세요.
                         </p>
                     </div>
-                    {/* WordPress Button also lives here for now, or could move to toolbar */}
-                    <WordPressDialog post={{ ...initialPost, content }} />
                 </div>
                 <SocialMediaDashboard
                     postId={initialPost.id}

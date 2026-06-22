@@ -37,10 +37,7 @@ interface PostActionToolbarProps {
     onToggleEdit: (value: boolean) => void;
     onSave: () => void;
     onCancel: () => void;
-    onRevert?: () => void; // Optional if no backup exists
-    canRevert: boolean;
 
-    onAnalyzeSEO: () => void; // Triggers Sheet
     onGenerateAudio: () => void;
 
     onDownloadMarkdown: () => void;
@@ -58,9 +55,6 @@ export function PostActionToolbar({
     onToggleEdit,
     onSave,
     onCancel,
-    onRevert,
-    canRevert,
-    onAnalyzeSEO,
     onGenerateAudio,
     onDownloadMarkdown,
     onPrint,
@@ -95,16 +89,6 @@ export function PostActionToolbar({
                             <X className="h-4 w-4 mr-2" />
                             취소
                         </Button>
-                        {canRevert && onRevert && (
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                onClick={onRevert}
-                                title="최적화 전으로 복구"
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
-                        )}
                     </>
                 ) : (
                     <Button
@@ -121,30 +105,6 @@ export function PostActionToolbar({
 
             {/* Right Group: Tools & Actions */}
             <div className="flex items-center gap-1 sm:gap-2">
-
-                {/* 1. SEO (Trigger for Sheet) */}
-                {/* Note: This button expects to be wrapped in SheetTrigger in the parent, 
-                     OR we handle the click to open sheet. 
-                     Ideally the Parent wraps this or we pass a ref. 
-                     For simplicity, let's assume the Parent handles the Opening via a passed function referencing a hidden trigger,
-                     OR better: We pass the SheetTrigger as a render prop or Slot? 
-                     Actually, passing a handler 'onAnalyzeSEO' is cleaner if we control the open state.
-                     BUT default Shadcn Sheet works best with Trigger.
-                     Let's expose this button and let Parent wrap it, OR make this a Dumb component.
-                     Making it dumb is best. But SheetTrigger needs to be direct parent.
-                     Let's Assume Parent will handle the Sheet state directly via 'open' prop, 
-                     OR we use a simpler approach: Just a button that calls the handler.
-                 */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onAnalyzeSEO}
-                    title="SEO 분석"
-                    className="text-muted-foreground hover:text-foreground"
-                >
-                    <Search className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">분석</span>
-                </Button>
 
                 {/* 2. Audio */}
                 {!hasAudio && (
