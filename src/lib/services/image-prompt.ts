@@ -22,15 +22,18 @@ ${contentSummary ? `- Content Summary: "${contentSummary}"` : ""}
 [Instructions for Prompt Design]
 1. Analyze the core concept, mood, and subject of the blog post.
 2. Design a single, cohesive visual scene that serves as a perfect metaphor or direct illustration of the topic. Avoid generic decorations; ensure every element in the image supports the core theme.
-3. Do NOT default to "tech" style unless the topic is explicitly about technology. For finance, use metaphoric assets; for health, use clean and natural aesthetics, etc.
+3. Keep the visual themes strictly aligned with the blog's core target domains: **Finance, Economics, and Technology**.
+   - Technology: Focus on abstract digital networks, cybersecurity concepts, futuristic data hubs, clean software wireframes, AI representations, or microelectronics.
+   - Finance & Economics: Focus on trend indicators, abstract global market visualizations, assets, currency elements, or growth vectors.
+   - Always prioritize clean, premium, and professional business-grade aesthetics (e.g., modern 3D render, high-end isometric illustration, minimalist vector design, or cinematic conceptual illustration).
 4. Describe:
    - The central subject or objects (shape, material, arrangement)
    - The background and environment
-   - The color palette and lighting style (e.g. warm/cool tones, cinematic lighting, pastel, dark-mode)
-   - The artistic style (e.g., modern 3D render, minimalist vector illustration, photorealistic, matte painting)
+   - The color palette and lighting style (e.g., corporate blues, vibrant gradients, warm/cool accents, dark-mode)
+   - The artistic style (aligned with the premium professional themes)
 5. NEGATIVE CONSTRAINTS (Crucial):
    - Absolutely NO text, letters, logos, numbers, or dates.
-   - No bovine/ox/buffalo/bull shapes.
+   - No bovine/ox/buffalo/bull shapes (even when illustrating financial market trends).
     `;
 
     if (customPrompt) {
