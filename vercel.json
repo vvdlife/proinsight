@@ -7,7 +7,7 @@
     "crons": [
         {
             "path": "/api/cron/generate-insight",
-            "schedule": "*/15 * * * *"
+            "schedule": "*/5 * * * *"
         },
         {
             "path": "/api/cron/cleanup",

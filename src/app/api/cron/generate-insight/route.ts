@@ -16,9 +16,9 @@ export async function GET() {
         const kstDate = new Date(now.getTime() + kstOffset);
         const currentHourKST = kstDate.getUTCHours();
         
-        // 현재 분을 15분 단위(0, 15, 30, 45)로 하향 보정하여 크론 지연에 강인한 대응
+        // 현재 분을 5분 단위(0, 5, 10, ..., 55)로 하향 보정하여 크론 지연에 강인한 대응
         const rawMinutes = kstDate.getUTCMinutes();
-        const currentMinuteKST = Math.floor(rawMinutes / 15) * 15;
+        const currentMinuteKST = Math.floor(rawMinutes / 5) * 5;
 
         const currentDayOfWeekKST = kstDate.getUTCDay(); // 0: Sun, 1: Mon, ...
         const currentDayOfMonthKST = kstDate.getUTCDate();

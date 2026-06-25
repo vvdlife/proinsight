@@ -211,10 +211,14 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                         <SelectValue placeholder="분 선택" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="0">00분 (정각)</SelectItem>
-                                        <SelectItem value="15">15분</SelectItem>
-                                        <SelectItem value="30">30분</SelectItem>
-                                        <SelectItem value="45">45분</SelectItem>
+                                        {Array.from({ length: 12 }).map((_, i) => {
+                                            const minVal = i * 5;
+                                            return (
+                                                <SelectItem key={minVal} value={String(minVal)}>
+                                                    {String(minVal).padStart(2, '0')}분
+                                                </SelectItem>
+                                            );
+                                        })}
                                     </SelectContent>
                                 </Select>
                             </div>
