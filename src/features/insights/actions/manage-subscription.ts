@@ -51,6 +51,7 @@ export async function createSubscription(formData: FormData) {
                 preferredDays: frequency === "WEEKLY" ? preferredDays : null,
                 preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true,
+                lastGeneratedAt: null, // Reset last generated time to apply new schedule immediately
             },
             create: {
                 userId,
