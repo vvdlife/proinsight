@@ -171,10 +171,10 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                             📅 발송 상세 스케줄 설정
                         </h4>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Time selector (all frequencies) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* Time selector (Hour) */}
                             <div className="space-y-2">
-                                <Label htmlFor="preferredTime">수신 시간 (한국 표준시 KST)</Label>
+                                <Label htmlFor="preferredTime">수신 시 (KST)</Label>
                                 <Select 
                                     name="preferredTime" 
                                     defaultValue={String(subscription?.preferredTime ?? 8)}
@@ -185,10 +185,10 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                     <SelectContent>
                                         {Array.from({ length: 24 }).map((_, i) => {
                                             let label = "";
-                                            if (i === 0) label = "오전 12시 (00:00)";
-                                            else if (i < 12) label = `오전 ${i}시 (${String(i).padStart(2, '0')}:00)`;
-                                            else if (i === 12) label = "오후 12시 (12:00)";
-                                            else label = `오후 ${i - 12}시 (${String(i).padStart(2, '0')}:00)`;
+                                            if (i === 0) label = "오전 12시 (00시)";
+                                            else if (i < 12) label = `오전 ${i}시`;
+                                            else if (i === 12) label = "오후 12시 (12시)";
+                                            else label = `오후 ${i - 12}시 (${i}시)`;
                                             
                                             return (
                                                 <SelectItem key={i} value={String(i)}>
@@ -200,8 +200,27 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                 </Select>
                             </div>
 
+                            {/* Time selector (Minute) */}
+                            <div className="space-y-2">
+                                <Label htmlFor="preferredMinute">수신 분 (KST)</Label>
+                                <Select 
+                                    name="preferredMinute" 
+                                    defaultValue={String(subscription?.preferredMinute ?? 0)}
+                                >
+                                    <SelectTrigger id="preferredMinute" className="bg-background">
+                                        <SelectValue placeholder="분 선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0">00분 (정각)</SelectItem>
+                                        <SelectItem value="15">15분</SelectItem>
+                                        <SelectItem value="30">30분</SelectItem>
+                                        <SelectItem value="45">45분</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             {/* Monthly day selector */}
-                            {frequency === "MONTHLY" && (
+                            {frequency === "MONTHLY" ? (
                                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <Label htmlFor="preferredDayOfMonth">수신 일자</Label>
                                     <Select 
@@ -220,6 +239,8 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            ) : (
+                                <div className="hidden sm:block" />
                             )}
                         </div>
 

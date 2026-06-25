@@ -8,6 +8,7 @@ import { toast } from "sonner";
 // Actions
 import { updatePost } from "@/features/post/actions/update-post";
 import { generateVoiceBriefing } from "@/features/post/actions/generate-voice";
+import { generatePostImage } from "@/features/generator/actions/generate-post";
 
 // Components
 import { MarkdownViewer } from "@/features/editor/components/MarkdownViewer";
@@ -34,11 +35,16 @@ interface PostDetailClientProps {
 
 export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
     // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // State Management
     // -------------------------------------------------------------------------
     const [isEditing, setIsEditing] = useState(false);
     const [content, setContent] = useState(initialPost.content);
     const [isPending, startTransition] = useTransition();
+
+    // Feature: Cover Image
+    const [coverImage, setCoverImage] = useState<string | null>(initialPost.coverImage);
+    const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
     // Feature: Voice Blog
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
@@ -116,6 +122,26 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
         }
     };
 
+    const handleRegenerateImage = async (customPrompt?: string) => {
+        setIsRegeneratingImage(true);
+        toast.info("대표 이미지 생성 중...", { description: "주제와 요청사항에 부합하는 이미지를 디자인하고 있습니다. (약 15초 소요)" });
+
+        try {
+            const result = await generatePostImage(initialPost.id, undefined, customPrompt);
+            if (result.success && result.imageUrl) {
+                setCoverImage(result.imageUrl);
+                toast.success("대표 이미지가 성공적으로 변경되었습니다!");
+            } else {
+                toast.error("대표 이미지 생성 실패", { description: result.message });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("대표 이미지 생성 중 오류가 발생했습니다.");
+        } finally {
+            setIsRegeneratingImage(false);
+        }
+    };
+
     // -------------------------------------------------------------------------
     // Rendering
     // -------------------------------------------------------------------------
@@ -148,7 +174,9 @@ export function PostDetailClient({ post: initialPost }: PostDetailClientProps) {
                     topic={initialPost.topic}
                     tone={initialPost.tone}
                     createdAt={initialPost.createdAt}
-                    coverImage={initialPost.coverImage}
+                    coverImage={coverImage}
+                    isRegeneratingImage={isRegeneratingImage}
+                    onRegenerateImage={handleRegenerateImage}
                 />
 
                 {/* Audio Player (Conditional) */}

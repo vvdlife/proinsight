@@ -24,6 +24,7 @@ export async function createSubscription(formData: FormData) {
         const telegramChatId = formData.get("telegramChatId") as string | null;
 
         const preferredTimeStr = formData.get("preferredTime") as string;
+        const preferredMinuteStr = formData.get("preferredMinute") as string;
         const preferredDays = formData.get("preferredDays") as string | null;
         const preferredDayOfMonthStr = formData.get("preferredDayOfMonth") as string | null;
 
@@ -32,6 +33,7 @@ export async function createSubscription(formData: FormData) {
         }
 
         const preferredTime = preferredTimeStr ? parseInt(preferredTimeStr, 10) : 8;
+        const preferredMinute = preferredMinuteStr ? parseInt(preferredMinuteStr, 10) : 0;
         const preferredDayOfMonth = preferredDayOfMonthStr ? parseInt(preferredDayOfMonthStr, 10) : 1;
 
         // Upsert to ensure only one subscription per user for MVP
@@ -45,6 +47,7 @@ export async function createSubscription(formData: FormData) {
                 receiveEmail,
                 telegramChatId,
                 preferredTime,
+                preferredMinute,
                 preferredDays: frequency === "WEEKLY" ? preferredDays : null,
                 preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true,
@@ -57,6 +60,7 @@ export async function createSubscription(formData: FormData) {
                 receiveEmail,
                 telegramChatId,
                 preferredTime,
+                preferredMinute,
                 preferredDays: frequency === "WEEKLY" ? preferredDays : null,
                 preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true, // Will start generating immediately at next cron cycle

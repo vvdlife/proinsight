@@ -15,6 +15,11 @@ export async function GET() {
         const kstOffset = 9 * 60 * 60 * 1000;
         const kstDate = new Date(now.getTime() + kstOffset);
         const currentHourKST = kstDate.getUTCHours();
+        
+        // 현재 분을 15분 단위(0, 15, 30, 45)로 하향 보정하여 크론 지연에 강인한 대응
+        const rawMinutes = kstDate.getUTCMinutes();
+        const currentMinuteKST = Math.floor(rawMinutes / 15) * 15;
+
         const currentDayOfWeekKST = kstDate.getUTCDay(); // 0: Sun, 1: Mon, ...
         const currentDayOfMonthKST = kstDate.getUTCDate();
 
@@ -29,8 +34,8 @@ export async function GET() {
         });
 
         const subscriptions = allActiveSubscriptions.filter(sub => {
-            // 1. Check Hour
-            if (sub.preferredTime !== currentHourKST) {
+            // 1. Check Hour & Minute
+            if (sub.preferredTime !== currentHourKST || sub.preferredMinute !== currentMinuteKST) {
                 return false;
             }
 

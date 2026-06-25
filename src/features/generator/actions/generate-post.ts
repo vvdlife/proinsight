@@ -85,8 +85,8 @@ export async function generatePost(data: PostFormValues, searchContext?: string)
     }
 }
 
-// Separate Action for Image (Kept for performance)
-export async function generatePostImage(postId: string, topic: string) {
+// Separate Action for Image (Kept for performance & Independent generation)
+export async function generatePostImage(postId: string, topic?: string, customPrompt?: string) {
     const { userId } = await auth();
     if (!userId) return { success: false, message: "Unauthorized" };
 
@@ -95,8 +95,19 @@ export async function generatePostImage(postId: string, topic: string) {
     if (!apiKey) return { success: false, message: "API Key not found" };
 
     try {
-        console.log("🎨 [Separate Action] Designing cover image...");
-        const imagePrompt = await generateImagePrompt(topic, apiKey);
+        console.log("🎨 [Separate Action] Designing cover image with enhanced context...");
+        
+        // Retrieve topic and content to build a context-rich prompt
+        const post = await prisma.post.findUnique({
+            where: { id: postId, userId },
+            select: { topic: true, content: true }
+        });
+        if (!post) return { success: false, message: "Post not found" };
+
+        const resolvedTopic = topic || post.topic;
+        const contentSummary = post.content ? post.content.substring(0, 600) : "";
+
+        const imagePrompt = await generateImagePrompt(resolvedTopic, apiKey, customPrompt, contentSummary);
         const imageBase64 = await generateBlogImage(imagePrompt, apiKey);
 
         if (imageBase64) {
