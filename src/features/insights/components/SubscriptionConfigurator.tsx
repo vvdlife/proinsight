@@ -29,6 +29,9 @@ const WEEKDAYS = [
 export function SubscriptionConfigurator({ subscription }: Props) {
     const [isPending, startTransition] = useTransition();
     const [frequency, setFrequency] = useState(subscription?.frequency || "DAILY");
+    const [hasSecondTime, setHasSecondTime] = useState(
+        subscription?.preferredTime2 !== undefined && subscription?.preferredTime2 !== null
+    );
     const [selectedDays, setSelectedDays] = useState<string[]>(
         subscription?.preferredDays 
             ? subscription.preferredDays.split(",") 
@@ -247,6 +250,77 @@ export function SubscriptionConfigurator({ subscription }: Props) {
                                 <div className="hidden sm:block" />
                             )}
                         </div>
+
+                        {/* Second time config option */}
+                        <div className="flex items-center justify-between pt-3 border-t border-primary/5">
+                            <div className="space-y-0.5">
+                                <Label htmlFor="hasSecondTime" className="text-xs font-semibold text-muted-foreground">하루 2회 수신 설정</Label>
+                                <p className="text-[11px] text-muted-foreground">오전과 오후 등 원하는 시간에 리포트를 하루 한 번 더 수신합니다.</p>
+                            </div>
+                            <Switch 
+                                id="hasSecondTime" 
+                                name="hasSecondTime" 
+                                checked={hasSecondTime} 
+                                onCheckedChange={setHasSecondTime}
+                            />
+                        </div>
+
+                        {/* Second time selectors */}
+                        {hasSecondTime && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-primary/5 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Time selector 2 (Hour) */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="preferredTime2">두 번째 수신 시 (KST)</Label>
+                                    <Select 
+                                        name="preferredTime2" 
+                                        defaultValue={String(subscription?.preferredTime2 ?? 20)}
+                                    >
+                                        <SelectTrigger id="preferredTime2" className="bg-background">
+                                            <SelectValue placeholder="시간 선택" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 24 }).map((_, i) => {
+                                                let label = "";
+                                                if (i === 0) label = "오전 12시 (00시)";
+                                                else if (i < 12) label = `오전 ${i}시`;
+                                                else if (i === 12) label = "오후 12시 (12시)";
+                                                else label = `오후 ${i - 12}시 (${i}시)`;
+                                                
+                                                return (
+                                                    <SelectItem key={i} value={String(i)}>
+                                                        {label}
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Time selector 2 (Minute) */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="preferredMinute2">두 번째 수신 분 (KST)</Label>
+                                    <Select 
+                                        name="preferredMinute2" 
+                                        defaultValue={String(subscription?.preferredMinute2 ?? 0)}
+                                    >
+                                        <SelectTrigger id="preferredMinute2" className="bg-background">
+                                            <SelectValue placeholder="분 선택" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.from({ length: 12 }).map((_, i) => {
+                                                const minVal = i * 5;
+                                                return (
+                                                    <SelectItem key={minVal} value={String(minVal)}>
+                                                        {String(minVal).padStart(2, '0')}분
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="hidden sm:block" />
+                            </div>
+                        )}
 
                         {/* Weekly days selector */}
                         {frequency === "WEEKLY" && (

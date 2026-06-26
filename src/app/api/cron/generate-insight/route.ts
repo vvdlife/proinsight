@@ -34,16 +34,20 @@ export async function GET() {
         });
 
         const subscriptions = allActiveSubscriptions.filter(sub => {
-            // 1. Check Hour & Minute
-            if (sub.preferredTime !== currentHourKST || sub.preferredMinute !== currentMinuteKST) {
+            // 1. Check Hour & Minute (match either first or second time slot)
+            const matchTime1 = sub.preferredTime === currentHourKST && sub.preferredMinute === currentMinuteKST;
+            const matchTime2 = sub.preferredTime2 !== null && sub.preferredMinute2 !== null &&
+                               sub.preferredTime2 === currentHourKST && sub.preferredMinute2 === currentMinuteKST;
+
+            if (!matchTime1 && !matchTime2) {
                 return false;
             }
 
-            // 2. Check duplicate generation (1-hour safeguard)
+            // 2. Check duplicate generation (15-minute safeguard to allow scheduling slots close to each other)
             if (sub.lastGeneratedAt) {
-                const hoursSinceLast = (now.getTime() - sub.lastGeneratedAt.getTime()) / (1000 * 60 * 60);
-                if (hoursSinceLast < 1) {
-                    console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated ${hoursSinceLast.toFixed(1)} hours ago)`);
+                const minutesSinceLast = (now.getTime() - sub.lastGeneratedAt.getTime()) / (1000 * 60);
+                if (minutesSinceLast < 15) {
+                    console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated ${minutesSinceLast.toFixed(1)} minutes ago)`);
                     return false;
                 }
             }

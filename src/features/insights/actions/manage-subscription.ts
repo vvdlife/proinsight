@@ -28,12 +28,18 @@ export async function createSubscription(formData: FormData) {
         const preferredDays = formData.get("preferredDays") as string | null;
         const preferredDayOfMonthStr = formData.get("preferredDayOfMonth") as string | null;
 
+        const hasSecondTime = formData.get("hasSecondTime") === "on";
+        const preferredTime2Str = formData.get("preferredTime2") as string | null;
+        const preferredMinute2Str = formData.get("preferredMinute2") as string | null;
+
         if (!topic || !frequency || !persona) {
             return { success: false, error: "필수 입력 항목이 누락되었습니다." };
         }
 
         const preferredTime = preferredTimeStr ? parseInt(preferredTimeStr, 10) : 8;
         const preferredMinute = preferredMinuteStr ? parseInt(preferredMinuteStr, 10) : 0;
+        const preferredTime2 = hasSecondTime && preferredTime2Str ? parseInt(preferredTime2Str, 10) : null;
+        const preferredMinute2 = hasSecondTime && preferredMinute2Str ? parseInt(preferredMinute2Str, 10) : null;
         const preferredDayOfMonth = preferredDayOfMonthStr ? parseInt(preferredDayOfMonthStr, 10) : 1;
 
         // Upsert to ensure only one subscription per user for MVP
@@ -48,6 +54,8 @@ export async function createSubscription(formData: FormData) {
                 telegramChatId,
                 preferredTime,
                 preferredMinute,
+                preferredTime2,
+                preferredMinute2,
                 preferredDays: frequency === "WEEKLY" ? preferredDays : null,
                 preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true,
@@ -62,6 +70,8 @@ export async function createSubscription(formData: FormData) {
                 telegramChatId,
                 preferredTime,
                 preferredMinute,
+                preferredTime2,
+                preferredMinute2,
                 preferredDays: frequency === "WEEKLY" ? preferredDays : null,
                 preferredDayOfMonth: frequency === "MONTHLY" ? preferredDayOfMonth : null,
                 isActive: true, // Will start generating immediately at next cron cycle
