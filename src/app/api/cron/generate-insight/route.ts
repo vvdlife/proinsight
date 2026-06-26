@@ -43,11 +43,28 @@ export async function GET() {
                 return false;
             }
 
-            // 2. Check duplicate generation (15-minute safeguard to allow scheduling slots close to each other)
+            // 2. Check duplicate generation (safeguard to prevent multiple runs in the same 5-minute cron slot)
             if (sub.lastGeneratedAt) {
-                const minutesSinceLast = (now.getTime() - sub.lastGeneratedAt.getTime()) / (1000 * 60);
-                if (minutesSinceLast < 15) {
-                    console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated ${minutesSinceLast.toFixed(1)} minutes ago)`);
+                const lastGenKST = new Date(sub.lastGeneratedAt.getTime() + kstOffset);
+                const lastGenHour = lastGenKST.getUTCHours();
+                const lastGenMinuteRaw = lastGenKST.getUTCMinutes();
+                const lastGenMinuteBucket = Math.floor(lastGenMinuteRaw / 5) * 5;
+                const lastGenDay = lastGenKST.getUTCDate();
+                const lastGenMonth = lastGenKST.getUTCMonth();
+                const lastGenYear = lastGenKST.getUTCFullYear();
+
+                const currentDay = kstDate.getUTCDate();
+                const currentMonth = kstDate.getUTCMonth();
+                const currentYear = kstDate.getUTCFullYear();
+
+                if (
+                    lastGenYear === currentYear &&
+                    lastGenMonth === currentMonth &&
+                    lastGenDay === currentDay &&
+                    lastGenHour === currentHourKST &&
+                    lastGenMinuteBucket === currentMinuteKST
+                ) {
+                    console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated in this 5-minute window: Hour ${currentHourKST}, Minute ${currentMinuteKST})`);
                     return false;
                 }
             }
