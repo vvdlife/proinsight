@@ -26,7 +26,7 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
     const TIMEOUT_MS = 15000; // 15 seconds max for Tavily
 
     try {
-        const fetchWithTimeout = async (depthOverride?: "basic") => {
+        const fetchWithTimeout = async (timeRange: "day" | "week", depthOverride?: "basic") => {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -43,6 +43,7 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
                         include_answer: true,
                         include_raw_content: false,
                         max_results: 5,
+                        time_range: timeRange,
                     }),
                     signal: controller.signal,
                 });
@@ -62,16 +63,26 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
 
         let data;
         try {
-            // First try with requested depth (advanced)
-            data = await fetchWithTimeout();
+            // First try with "day" time range
+            console.log(`[SearchWeb] Searching with time_range: "day" for query: "${query}"`);
+            data = await fetchWithTimeout("day");
+
+            // Fallback to "week" if results are empty
+            if (!data.results || data.results.length === 0) {
+                console.log(`[SearchWeb] 0 results found with "day". Retrying with time_range: "week"...`);
+                data = await fetchWithTimeout("week");
+            }
         } catch (error: any) {
-            console.warn(`Initial search failed or timed out: ${error.message}`);
-            if (depth === "advanced" && (error.name === 'AbortError' || error.message.includes('timeout'))) {
-                // Retry with basic depth which is faster
-                console.log("Falling back to 'basic' search depth...");
-                data = await fetchWithTimeout("basic");
-            } else {
-                throw error;
+            console.warn(`Initial "day" search failed or timed out: ${error.message}. Retrying with "week"...`);
+            try {
+                data = await fetchWithTimeout("week");
+            } catch (retryError: any) {
+                if (depth === "advanced") {
+                    console.log("Advanced search failed on retry. Falling back to 'basic' search depth with 'week'...");
+                    data = await fetchWithTimeout("week", "basic");
+                } else {
+                    throw retryError;
+                }
             }
         }
 

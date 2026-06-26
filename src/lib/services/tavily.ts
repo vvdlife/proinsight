@@ -26,7 +26,7 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
     const depth = options?.searchDepth || "basic";
     const maxResults = options?.maxResults || 5;
 
-    try {
+    const fetchWithTimeRange = async (timeRange: "day" | "week") => {
         const response = await fetch("https://api.tavily.com/search", {
             method: "POST",
             headers: {
@@ -40,6 +40,7 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
                 include_raw_content: false,
                 include_images: false,
                 max_results: maxResults,
+                time_range: timeRange,
             }),
         });
 
@@ -47,14 +48,17 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
             throw new Error(`Tavily API Error: ${response.statusText}`);
         }
 
-        const data = await response.json();
+        return await response.json();
+    };
 
-        // Extract relevant data
-        // Note: Tavily actually returns 'results' array.
-        // It doesn't strictly separate "People Also Ask" in the basic search endpoint unless using specific options.
-        // For this implementation, we will treat the search results as the context.
-        // To get "questions", we might need a separate call or specific prompt to Gemini to extract questions from this context.
-        // BUT, for Better SEO, we can assume the user wants the context to find WHAT people are asking.
+    try {
+        console.log(`[SearchTavily] Searching with time_range: "day" for query: "${query}"`);
+        let data = await fetchWithTimeRange("day");
+
+        if (!data.results || data.results.length === 0) {
+            console.log(`[SearchTavily] 0 results found with "day". Retrying with "week"...`);
+            data = await fetchWithTimeRange("week");
+        }
 
         return {
             results: data.results.map((r: any) => ({
@@ -63,10 +67,24 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
                 content: r.content,
                 score: r.score,
             })),
-            relatedQuestions: [], // Placeholder if valid API field isn't available directly
+            relatedQuestions: [],
         };
     } catch (error) {
-        console.error("Tavily Search Failed:", error);
-        return { results: [], relatedQuestions: [] };
+        console.error("Tavily Search Failed on 'day'. Retrying with 'week' as fallback...", error);
+        try {
+            const data = await fetchWithTimeRange("week");
+            return {
+                results: data.results.map((r: any) => ({
+                    title: r.title,
+                    url: r.url,
+                    content: r.content,
+                    score: r.score,
+                })),
+                relatedQuestions: [],
+            };
+        } catch (fallbackError) {
+            console.error("Tavily Search Failed completely:", fallbackError);
+            return { results: [], relatedQuestions: [] };
+        }
     }
 }
