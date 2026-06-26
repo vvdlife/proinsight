@@ -6,10 +6,6 @@
     },
     "crons": [
         {
-            "path": "/api/cron/generate-insight",
-            "schedule": "*/5 * * * *"
-        },
-        {
             "path": "/api/cron/cleanup",
             "schedule": "0 0 * * *"
         }
