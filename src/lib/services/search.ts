@@ -24,6 +24,16 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
     }
 
     const TIMEOUT_MS = 15000; // 15 seconds max for Tavily
+    const SNS_BLOCKLIST = [
+        "instagram.com",
+        "facebook.com",
+        "twitter.com",
+        "x.com",
+        "threads.net",
+        "tiktok.com",
+        "youtube.com",
+        "pinterest.com"
+    ];
 
     try {
         const fetchWithTimeout = async (timeRange: "day" | "week", depthOverride?: "basic") => {
@@ -44,6 +54,7 @@ export async function searchWeb(query: string, depth: "basic" | "advanced" = "ad
                         include_raw_content: false,
                         max_results: 5,
                         time_range: timeRange,
+                        exclude_domains: SNS_BLOCKLIST,
                     }),
                     signal: controller.signal,
                 });

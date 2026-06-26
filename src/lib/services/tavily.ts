@@ -26,6 +26,17 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
     const depth = options?.searchDepth || "basic";
     const maxResults = options?.maxResults || 5;
 
+    const SNS_BLOCKLIST = [
+        "instagram.com",
+        "facebook.com",
+        "twitter.com",
+        "x.com",
+        "threads.net",
+        "tiktok.com",
+        "youtube.com",
+        "pinterest.com"
+    ];
+
     const fetchWithTimeRange = async (timeRange: "day" | "week") => {
         const response = await fetch("https://api.tavily.com/search", {
             method: "POST",
@@ -41,6 +52,7 @@ export async function searchTavily(query: string, options?: TavilySearchOptions)
                 include_images: false,
                 max_results: maxResults,
                 time_range: timeRange,
+                exclude_domains: SNS_BLOCKLIST,
             }),
         });
 
