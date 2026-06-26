@@ -39,10 +39,10 @@ export async function GET() {
                 return false;
             }
 
-            // 2. Check duplicate generation (12-hour safeguard)
+            // 2. Check duplicate generation (1-hour safeguard)
             if (sub.lastGeneratedAt) {
                 const hoursSinceLast = (now.getTime() - sub.lastGeneratedAt.getTime()) / (1000 * 60 * 60);
-                if (hoursSinceLast < 12) {
+                if (hoursSinceLast < 1) {
                     console.log(`[CronScheduler] Skipping sub ${sub.id} (already generated ${hoursSinceLast.toFixed(1)} hours ago)`);
                     return false;
                 }
