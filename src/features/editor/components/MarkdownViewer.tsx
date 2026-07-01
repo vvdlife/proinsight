@@ -456,6 +456,16 @@ const Paragraph = ({ children, node, ...props }: any) => {
             newContent[0] = newFirstChild;
             return <AlertBlock type={alertInfo.type} title={alertInfo.title}><p className="mb-0">{newContent}</p></AlertBlock>;
         }
+
+        // Detect reference list item (e.g., "[1] AI가 스스로...")
+        const isReference = /^\[\d+\]/.test(firstChild);
+        if (isReference) {
+            return (
+                <p className="leading-8 mb-6 text-[1.05rem] text-foreground/90 text-left break-all" {...props}>
+                    {children}
+                </p>
+            );
+        }
     }
 
     return <p className="leading-8 mb-6 text-[1.05rem] text-foreground/90" {...props}>{children}</p>;
